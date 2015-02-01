@@ -13,13 +13,13 @@ public class MockWorldManager implements WorldManager {
 	@Override
 	public World getWorld(final String name, final boolean autoload) {
 		// TODO Auto-generated method stub
-		return null;
+		return new MockWorld();
 	}
 	
 	@Override
 	public World getWorld(final String name, final DimensionType type, final boolean autoload) {
 		// TODO Auto-generated method stub
-		return null;
+		return new MockWorld();
 	}
 	
 	@Override
@@ -56,7 +56,7 @@ public class MockWorldManager implements WorldManager {
 	@Override
 	public World loadWorld(final String name, final DimensionType type) {
 		// TODO Auto-generated method stub
-		return null;
+		return new MockWorld();
 	}
 	
 	@Override

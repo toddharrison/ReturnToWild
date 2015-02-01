@@ -103,15 +103,6 @@ public class TemplateManager {
 		});
 	}
 	
-	private RegionFile getRegionFile(final String name, final DimensionType type, final int regionX,
-			final int regionZ) throws IOException {
-		final String resourceName = "r." + regionX + "." + regionZ + ".mca";
-		final File templateDir = getTemplateDir(name, type);
-		final File regionDir = new File(templateDir, "region");
-		final File regionFile = new File(regionDir, resourceName);
-		return new RegionFile(regionFile);
-	}
-	
 	public Future<Boolean> restore(final String name, final DimensionType type, final int x1,
 			final int y1, final int z1, final int x2, final int y2, final int z2) {
 		return TaskManager.submitTask(new Callable<Boolean>() {
@@ -120,7 +111,7 @@ public class TemplateManager {
 				final boolean success = true;
 				
 				// Load the target world
-				log.info("name: " + name + " " + type);
+				// log.info("name: " + name + " " + type);
 				final World world = worldManager.getWorld(name, type, true);
 				
 				// Determine the block bounds
@@ -142,8 +133,8 @@ public class TemplateManager {
 					for (int regionZ = regionZMin; regionZ <= regionZMax; regionZ++) {
 						// Load the appropriate region file
 						final RegionFile region = getRegionFile(name, type, regionX, regionZ);
-						final String regionName = regionX + ":" + regionZ;
-						log.info("Processing region: " + regionName);
+						// final String regionName = regionX + ":" + regionZ;
+						// log.info("Processing region: " + regionName);
 						
 						// Determine the included blocks
 						final int regionBlockXMin = RegionUtil.getRegionBlockIntersection(regionX, xMin);
@@ -167,9 +158,10 @@ public class TemplateManager {
 								final CompoundTag level = NbtIo.read(dis);
 								dis.close();
 								final CompoundTag chunkData = level.getCompound("Level");
-								final String chunkName = chunkX + ":" + chunkZ + " (" + relChunkX + ":" + relChunkZ
-										+ ")";
-								log.info("Processing chunk: " + chunkName);
+								// final String chunkName = chunkX + ":" + chunkZ + " (" + relChunkX + ":" +
+								// relChunkZ
+								// + ")";
+								// log.info("Processing chunk: " + chunkName);
 								
 								// Determine the included sections
 								final int sectionMin = RegionUtil.getSectionForBlockCoordinate(yMin);
@@ -180,7 +172,7 @@ public class TemplateManager {
 								for (int sectionId = sectionMin; sectionId <= sectionMax; sectionId++) {
 									// Find the section
 									final CompoundTag section = (CompoundTag) sections.get(sectionId);
-									log.info("Processing section: " + sectionId);
+									// log.info("Processing section: " + sectionId);
 									
 									// Determine the included blocks
 									final int sectionBlockMin = RegionUtil.getSectionBlockIntersection(sectionId,
@@ -198,8 +190,8 @@ public class TemplateManager {
 										// For each block
 										for (int blockX = blockXMin; blockX <= blockXMax; blockX++) {
 											for (int blockZ = blockZMin; blockZ <= blockZMax; blockZ++) {
-												final String blockName = blockX + ":" + blockY + ":" + blockZ;
-												log.info("Processing block: " + blockName);
+												// final String blockName = blockX + ":" + blockY + ":" + blockZ;
+												// log.info("Processing block: " + blockName);
 												
 												// Determine the relative block location
 												final int relX = getChunkRelativeBlockCoordinate(blockX);
@@ -296,18 +288,27 @@ public class TemplateManager {
 		return new File(worldDir, name + "_" + type.getName());
 	}
 	
-	private String printHeightMap(final int[] bytes, final int offset) {
-		final StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < bytes.length; i++) {
-			sb.append(bytes[i]);
-			if ((i + 1) % offset == 0) {
-				sb.append("\n");
-			} else {
-				sb.append(" ");
-			}
-		}
-		return sb.toString();
+	private RegionFile getRegionFile(final String name, final DimensionType type, final int regionX,
+			final int regionZ) throws IOException {
+		final String resourceName = "r." + regionX + "." + regionZ + ".mca";
+		final File templateDir = getTemplateDir(name, type);
+		final File regionDir = new File(templateDir, "region");
+		final File regionFile = new File(regionDir, resourceName);
+		return new RegionFile(regionFile);
 	}
+	
+	// private String printHeightMap(final int[] bytes, final int offset) {
+	// final StringBuilder sb = new StringBuilder();
+	// for (int i = 0; i < bytes.length; i++) {
+	// sb.append(bytes[i]);
+	// if ((i + 1) % offset == 0) {
+	// sb.append("\n");
+	// } else {
+	// sb.append(" ");
+	// }
+	// }
+	// return sb.toString();
+	// }
 	
 	class Block {
 		public int type;

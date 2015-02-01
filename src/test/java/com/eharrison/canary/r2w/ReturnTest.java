@@ -9,7 +9,6 @@ import net.canarymod.api.world.DimensionType;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class ReturnTest {
@@ -43,9 +42,8 @@ public class ReturnTest {
 		}
 	}
 	
-	@Ignore
 	@Test
-	public void test() throws Exception {
+	public void restore() throws Exception {
 		final File worldsDir = new File("src/test/resources/worlds");
 		final File templatesDir = new File("src/test/resources/templates");
 		
