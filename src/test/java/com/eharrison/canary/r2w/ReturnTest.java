@@ -6,12 +6,18 @@ import java.io.File;
 import java.util.concurrent.Future;
 
 import net.canarymod.api.world.DimensionType;
+import net.canarymod.api.world.blocks.BlockType;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
 
 public class ReturnTest {
+	@Test
+	public void foo() {
+		System.out.println(BlockType.fromIdAndData(3, 2).getMachineName());
+	}
+	
 	@Test
 	public void getTemplateBlock() throws Exception {
 		final File worldsDir = new File("src/test/resources/worlds");

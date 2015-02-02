@@ -135,14 +135,12 @@ public class MockWorld implements World {
 	
 	@Override
 	public Block getBlockAt(final int x, final int y, final int z) {
-		// TODO Auto-generated method stub
-		return null;
+		return new MockBlock();
 	}
 	
 	@Override
 	public Block getBlockAt(final Position position) {
-		// TODO Auto-generated method stub
-		return null;
+		return new MockBlock();
 	}
 	
 	@Override
