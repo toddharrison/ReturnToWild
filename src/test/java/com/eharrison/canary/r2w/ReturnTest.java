@@ -6,6 +6,7 @@ import java.io.File;
 import java.util.concurrent.Future;
 
 import net.canarymod.api.world.DimensionType;
+import net.canarymod.api.world.blocks.BlockType;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,20 +24,20 @@ public class ReturnTest {
 		
 		final Future<Boolean> future = templateManager.createTemplate("default", DimensionType.NORMAL);
 		if (future.get()) {
-			assertEquals(57,
-					templateManager.getTemplateBlock("default", DimensionType.NORMAL, -261, 69, 229).type);
-			assertEquals(57,
-					templateManager.getTemplateBlock("default", DimensionType.NORMAL, -260, 69, 229).type);
-			assertEquals(57,
-					templateManager.getTemplateBlock("default", DimensionType.NORMAL, -259, 69, 229).type);
-			assertEquals(57,
-					templateManager.getTemplateBlock("default", DimensionType.NORMAL, -258, 69, 229).type);
-			assertEquals(57,
-					templateManager.getTemplateBlock("default", DimensionType.NORMAL, -260, 69, 230).type);
-			assertEquals(57,
-					templateManager.getTemplateBlock("default", DimensionType.NORMAL, -260, 69, 228).type);
-			assertEquals(2,
-					templateManager.getTemplateBlock("default", DimensionType.NORMAL, -260, 69, 227).type);
+			assertEquals(BlockType.DiamondBlock,
+					templateManager.getTemplateBlock("default", DimensionType.NORMAL, -261, 69, 229));
+			assertEquals(BlockType.DiamondBlock,
+					templateManager.getTemplateBlock("default", DimensionType.NORMAL, -260, 69, 229));
+			assertEquals(BlockType.DiamondBlock,
+					templateManager.getTemplateBlock("default", DimensionType.NORMAL, -259, 69, 229));
+			assertEquals(BlockType.DiamondBlock,
+					templateManager.getTemplateBlock("default", DimensionType.NORMAL, -258, 69, 229));
+			assertEquals(BlockType.DiamondBlock,
+					templateManager.getTemplateBlock("default", DimensionType.NORMAL, -260, 69, 230));
+			assertEquals(BlockType.DiamondBlock,
+					templateManager.getTemplateBlock("default", DimensionType.NORMAL, -260, 69, 228));
+			assertEquals(BlockType.Grass,
+					templateManager.getTemplateBlock("default", DimensionType.NORMAL, -260, 69, 227));
 		} else {
 			fail("Failed to create the template");
 		}

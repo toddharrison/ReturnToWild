@@ -156,7 +156,7 @@ public class TemplateManager {
 		});
 	}
 	
-	public BlockData getTemplateBlock(final String name, final DimensionType type, final int x,
+	public BlockType getTemplateBlock(final String name, final DimensionType type, final int x,
 			final int y, final int z) throws IOException {
 		// Determine the absolute chunk of the block
 		final int chunkX = getChunkForBlockCoordinate(x);
@@ -212,7 +212,7 @@ public class TemplateManager {
 		// Close the region File
 		region.close();
 		
-		return new BlockData(blockType, blockData);
+		return BlockType.fromIdAndData(blockType, blockData);
 	}
 	
 	private void restoreRegion(final World world, final RegionFile region, final int regionX,
@@ -391,19 +391,4 @@ public class TemplateManager {
 	// }
 	// return sb.toString();
 	// }
-	
-	class BlockData {
-		public int type;
-		public int data;
-		
-		public BlockData(final int type, final int data) {
-			this.type = type;
-			this.data = data;
-		}
-		
-		@Override
-		public String toString() {
-			return type + ":" + data;
-		}
-	}
 }
