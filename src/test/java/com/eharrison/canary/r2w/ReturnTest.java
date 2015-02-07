@@ -6,18 +6,12 @@ import java.io.File;
 import java.util.concurrent.Future;
 
 import net.canarymod.api.world.DimensionType;
-import net.canarymod.api.world.blocks.BlockType;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
 
 public class ReturnTest {
-	@Test
-	public void foo() {
-		System.out.println(BlockType.fromIdAndData(3, 2).getMachineName());
-	}
-	
 	@Test
 	public void getTemplateBlock() throws Exception {
 		final File worldsDir = new File("src/test/resources/worlds");
@@ -62,6 +56,28 @@ public class ReturnTest {
 		if (futureCreate.get()) {
 			final Future<Boolean> futureRestore = templateManager.restore("default",
 					DimensionType.NORMAL, -1, 62, -1, 1, 63, 1);
+			if (!futureRestore.get()) {
+				fail("Failed to restore the template");
+			}
+		} else {
+			fail("Failed to create the template");
+		}
+	}
+	
+	@Test
+	public void restoreHigherThanSnapshot() throws Exception {
+		final File worldsDir = new File("src/test/resources/worlds");
+		final File templatesDir = new File("src/test/resources/templates");
+		
+		final Logger logger = LogManager.getLogger();
+		final TemplateManager templateManager = new TemplateManager(logger, new MockWorldManager(),
+				worldsDir, templatesDir);
+		
+		final Future<Boolean> futureCreate = templateManager.createTemplate("default",
+				DimensionType.NORMAL);
+		if (futureCreate.get()) {
+			final Future<Boolean> futureRestore = templateManager.restore("default",
+					DimensionType.NORMAL, -1, 200, -1, 1, 201, 1);
 			if (!futureRestore.get()) {
 				fail("Failed to restore the template");
 			}

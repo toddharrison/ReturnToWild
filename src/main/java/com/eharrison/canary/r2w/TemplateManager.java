@@ -268,6 +268,10 @@ public class TemplateManager {
 					// Restore the section
 					final CompoundTag section = (CompoundTag) sections.get(sectionY);
 					restoreSection(world, chunkX, chunkZ, section, xMin, yMin, zMin, xMax, yMax, zMax);
+				} else {
+					// Fill the section with air
+					fillSection(world, chunkX, chunkZ, sectionY, xMin, yMin, zMin, xMax, yMax, zMax,
+							BlockType.Air);
 				}
 			}
 		}
@@ -301,6 +305,36 @@ public class TemplateManager {
 		}
 	}
 	
+	private void fillSection(final World world, final int chunkX, final int chunkZ,
+			final int sectionY, final int xMin, final int yMin, final int zMin, final int xMax,
+			final int yMax, final int zMax, final BlockType blockType) {
+		log.info("Filling section: " + sectionY);
+		
+		// Determine the included blocks
+		final int sectionBlockMin = RegionUtil.getSectionBlockIntersection(sectionY, yMin);
+		final int sectionBlockMax = RegionUtil.getSectionBlockIntersection(sectionY, yMax);
+		
+		for (int blockY = sectionBlockMin; blockY <= sectionBlockMax; blockY++) {
+			// Determine the included blocks
+			final int blockXMin = RegionUtil.getChunkBlockIntersection(chunkX, xMin);
+			final int blockXMax = RegionUtil.getChunkBlockIntersection(chunkX, xMax);
+			final int blockZMin = RegionUtil.getChunkBlockIntersection(chunkZ, zMin);
+			final int blockZMax = RegionUtil.getChunkBlockIntersection(chunkZ, zMax);
+			
+			// For each block
+			for (int blockX = blockXMin; blockX <= blockXMax; blockX++) {
+				for (int blockZ = blockZMin; blockZ <= blockZMax; blockZ++) {
+					// Set the block in the target world
+					log.debug("Setting block: " + blockX + ":" + blockY + ":" + blockZ + " to "
+							+ blockType.getId() + ":" + blockType.getData());
+					final Block block = world.getBlockAt(blockX, blockY, blockZ);
+					block.setType(blockType);
+					block.update();
+				}
+			}
+		}
+	}
+	
 	private void restoreBlock(final World world, final CompoundTag section, final int blockX,
 			final int blockY, final int blockZ) {
 		if (world != null && section != null && !section.isEmpty()) {
@@ -317,7 +351,7 @@ public class TemplateManager {
 			final short type = blocks[relY << 8 | relZ << 4 | relX];
 			final short data = (short) dataValues.get(relX, relY, relZ);
 			
-			log.info("Setting block: " + blockX + ":" + blockY + ":" + blockZ + " to " + type + ":"
+			log.debug("Setting block: " + blockX + ":" + blockY + ":" + blockZ + " to " + type + ":"
 					+ data);
 			
 			// Set the block in the target world
