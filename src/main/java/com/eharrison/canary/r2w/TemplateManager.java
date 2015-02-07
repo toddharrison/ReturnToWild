@@ -304,7 +304,7 @@ public class TemplateManager {
 			final int yMax, final int zMax) {
 		if (chunk != null && !chunk.isEmpty()) {
 			final CompoundTag level = chunk.getCompound("Level");
-			log.info("Processing chunk: " + chunkX + ":" + chunkZ);
+			log.debug("Processing chunk: " + chunkX + ":" + chunkZ);
 			
 			// Determine the included sections
 			final int sectionMin = RegionUtil.getSectionForBlockCoordinate(yMin);
@@ -357,7 +357,7 @@ public class TemplateManager {
 	private void fillSection(final World world, final int chunkX, final int chunkZ,
 			final int sectionY, final int xMin, final int yMin, final int zMin, final int xMax,
 			final int yMax, final int zMax, final BlockType blockType) {
-		log.info("Filling section: " + sectionY);
+		log.debug("Filling section: " + sectionY);
 		
 		// Determine the included blocks
 		final int sectionBlockMin = RegionUtil.getSectionBlockIntersection(sectionY, yMin);
@@ -456,7 +456,7 @@ public class TemplateManager {
 			final int yMax, final int zMax) {
 		if (chunk != null && !chunk.isEmpty()) {
 			final CompoundTag level = chunk.getCompound("Level");
-			log.info("Processing chunk: " + chunkX + ":" + chunkZ);
+			log.debug("Processing chunk: " + chunkX + ":" + chunkZ);
 			
 			// Determine the included sections
 			final int sectionMin = RegionUtil.getSectionForBlockCoordinate(yMin);
