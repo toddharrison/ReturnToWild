@@ -485,9 +485,11 @@ public class TemplateManager {
 					final CompoundTag section = sections.get(sectionY);
 					updateSection(world, chunkX, chunkZ, section, xMin, yMin, zMin, xMax, yMax, zMax);
 				} else {
+					// Create the new sections, then update the correct one
 					CompoundTag section = null;
 					while (sectionY >= sections.size()) {
 						section = new CompoundTag();
+						section.putByte("Y", (byte) sectionY);
 						final byte[] blocks = new byte[4096];
 						Arrays.fill(blocks, (byte) -1);
 						section.putByteArray("Blocks", blocks);
@@ -496,9 +498,6 @@ public class TemplateManager {
 						section.putByteArray("Data", data);
 						sections.add(section);
 					}
-					
-					// Create the new section, then update it
-					section.putByte("Y", (byte) sectionY);
 					updateSection(world, chunkX, chunkZ, section, xMin, yMin, zMin, xMax, yMax, zMax);
 				}
 			}
