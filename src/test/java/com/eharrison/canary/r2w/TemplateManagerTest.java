@@ -17,7 +17,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class ReturnTest {
+public class TemplateManagerTest {
 	@Rule
 	public TemporaryFolder templateTempDir = new TemporaryFolder();
 	
