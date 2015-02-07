@@ -6,6 +6,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
@@ -58,7 +59,7 @@ public class TemplateManager {
 				// Unload the world
 				boolean loaded = false;
 				if (worldManager.worldIsLoaded(name, type)) {
-					log.info("Unloading world");
+					log.debug("Unloading world");
 					loaded = true;
 					worldManager.getWorld(name, type, false).broadcastMessage(
 							"Creating a world template, You have to GET OUT!");
@@ -71,11 +72,11 @@ public class TemplateManager {
 				if (!templateDir.exists()) {
 					success = templateDir.mkdirs();
 				}
-				log.info("Prepared template world directory");
+				log.debug("Prepared template world directory");
 				
 				if (success) {
 					// Copy the world region data into the template
-					log.info("Copying region files");
+					log.debug("Copying region files");
 					try {
 						FileUtils.copyDirectory(new File(worldsDir, name + "/" + name + "_" + type.getName()
 								+ "/region"), new File(templateDir, "region"));
@@ -86,11 +87,11 @@ public class TemplateManager {
 				
 				// Load the world if it was loaded to begin with
 				if (loaded) {
-					log.info("Loading world");
+					log.debug("Loading world");
 					worldManager.loadWorld(name, type);
 				}
 				
-				log.info("Created template " + name + "_" + type.getName() + ": " + success);
+				log.debug("Created template " + name + "_" + type.getName() + ": " + success);
 				return success;
 			}
 		});
@@ -141,14 +142,16 @@ public class TemplateManager {
 					for (int regionX = regionXMin; regionX <= regionXMax; regionX++) {
 						for (int regionZ = regionZMin; regionZ <= regionZMax; regionZ++) {
 							// Load the appropriate region file
-							final RegionFile region = loadRegionFile(name, type, regionX, regionZ);
-							if (region != null) {
-								log.info("Processing region: " + regionX + ":" + regionZ);
-								updateRegion(world, region, regionX, regionZ, xMin, yMin, zMin, xMax, yMax, zMax);
-								
-								// Close the region File
-								region.close();
+							RegionFile region = loadRegionFile(name, type, regionX, regionZ);
+							if (region == null) {
+								region = newRegionFile(name, type, regionX, regionZ);
 							}
+							
+							log.debug("Processing region: " + regionX + ":" + regionZ);
+							updateRegion(world, region, regionX, regionZ, xMin, yMin, zMin, xMax, yMax, zMax);
+							
+							// Close the region File
+							region.close();
 						}
 					}
 				}
@@ -190,7 +193,7 @@ public class TemplateManager {
 							// Load the appropriate region file
 							final RegionFile region = loadRegionFile(name, type, regionX, regionZ);
 							if (region != null) {
-								log.info("Processing region: " + regionX + ":" + regionZ);
+								log.debug("Processing region: " + regionX + ":" + regionZ);
 								restoreRegion(world, region, regionX, regionZ, xMin, yMin, zMin, xMax, yMax, zMax);
 								
 								// Close the region File
@@ -210,58 +213,64 @@ public class TemplateManager {
 		// Determine the absolute chunk of the block
 		final int chunkX = getChunkForBlockCoordinate(x);
 		final int chunkZ = getChunkForBlockCoordinate(z);
-		// System.out.println("Chunk: " + chunkX + ":" + chunkZ);
 		
 		// Determine the region of the chunk
 		final int regionX = getRegionForChunkCoordinate(chunkX);
 		final int regionZ = getRegionForChunkCoordinate(chunkZ);
-		// System.out.println("Region: " + regionX + ":" + regionZ);
 		
 		// Load the appropriate region file
 		final RegionFile region = loadRegionFile(name, type, regionX, regionZ);
-		// System.out.println(region.printOffsets());
 		
-		// Determine the relative chunk in the region
-		final int relChunkX = getRegionRelativeChunkCoordinate(chunkX);
-		final int relChunkZ = getRegionRelativeChunkCoordinate(chunkZ);
-		// System.out.println("Region Chunk: " + relChunkX + ":" + relChunkZ);
+		BlockType result = null;
+		if (region != null) {
+			// Determine the relative chunk in the region
+			final int relChunkX = getRegionRelativeChunkCoordinate(chunkX);
+			final int relChunkZ = getRegionRelativeChunkCoordinate(chunkZ);
+			
+			// Load the chunk
+			final DataInputStream dis = region.getChunkDataInputStream(relChunkX, relChunkZ);
+			if (dis != null) {
+				final CompoundTag level = NbtIo.read(dis);
+				dis.close();
+				final CompoundTag chunkData = level.getCompound("Level");
+				
+				// Get the height map
+				// final int[] heightMap = chunkData.getIntArray("HeightMap");
+				// System.out.println(printHeightMap(heightMap, 16));
+				
+				// Determine the section of the chunk
+				final int sectionId = getSectionForBlockCoordinate(y);
+				
+				// Find the section
+				final ListTag<?> sections = chunkData.getList("Sections");
+				if (sections.size() > sectionId) {
+					final CompoundTag section = (CompoundTag) sections.get(sectionId);
+					
+					// Determine the relative block location
+					final int relX = getChunkRelativeBlockCoordinate(x);
+					final int relY = getSectionRelativeBlockCoordinate(y);
+					final int relZ = getChunkRelativeBlockCoordinate(z);
+					
+					// Get the block type and data from the section
+					final byte[] blocks = section.getByteArray("Blocks");
+					if (blocks.length > 0) {
+						final DataLayer dataValues = new DataLayer(section.getByteArray("Data"), 4);
+						final int blockType = blocks[relY << 8 | relZ << 4 | relX];
+						final int blockData = dataValues.get(relX, relY, relZ);
+						
+						// -1 indicates not initialized by TemplateManager
+						if (blockType != -1) {
+							result = BlockType.fromIdAndData(blockType, blockData);
+						}
+					}
+				}
+			}
+			
+			// Close the region File
+			region.close();
+		}
 		
-		// Load the chunk
-		final DataInputStream dis = region.getChunkDataInputStream(relChunkX, relChunkZ);
-		final CompoundTag level = NbtIo.read(dis);
-		dis.close();
-		final CompoundTag chunkData = level.getCompound("Level");
-		
-		// Get the height map
-		// final int[] heightMap = chunkData.getIntArray("HeightMap");
-		// System.out.println(printHeightMap(heightMap, 16));
-		
-		// Determine the section of the chunk
-		final int sectionId = getSectionForBlockCoordinate(y);
-		// System.out.println("Section: " + sectionId);
-		
-		// Find the section
-		final ListTag<?> sections = chunkData.getList("Sections");
-		final CompoundTag section = (CompoundTag) sections.get(sectionId);
-		// System.out.println("Section: " + sectionId);
-		// System.out.println(printSection(section));
-		
-		// Determine the relative block location
-		final int relX = getChunkRelativeBlockCoordinate(x);
-		final int relY = getSectionRelativeBlockCoordinate(y);
-		final int relZ = getChunkRelativeBlockCoordinate(z);
-		// System.out.println("Section Block: " + relX + ":" + relY + ":" + relZ);
-		
-		// Get the block type and data from the section
-		final byte[] blocks = section.getByteArray("Blocks");
-		final DataLayer dataValues = new DataLayer(section.getByteArray("Data"), 4);
-		final int blockType = blocks[relY << 8 | relZ << 4 | relX];
-		final int blockData = dataValues.get(relX, relY, relZ);
-		
-		// Close the region File
-		region.close();
-		
-		return BlockType.fromIdAndData(blockType, blockData);
+		return result;
 	}
 	
 	private void restoreRegion(final World world, final RegionFile region, final int regionX,
@@ -387,8 +396,6 @@ public class TemplateManager {
 	private void restoreBlock(final World world, final CompoundTag section, final int blockX,
 			final int blockY, final int blockZ) {
 		if (world != null && section != null && !section.isEmpty()) {
-			// log.info("Processing block: " + blockX + ":" + blockY + ":" + blockZ);
-			
 			// Determine the relative block location
 			final int relX = getChunkRelativeBlockCoordinate(blockX);
 			final int relY = getSectionRelativeBlockCoordinate(blockY);
@@ -432,20 +439,27 @@ public class TemplateManager {
 					// Get the relative location of the chunk
 					final int relChunkX = RegionUtil.getRegionRelativeChunkCoordinate(chunkX);
 					final int relChunkZ = RegionUtil.getRegionRelativeChunkCoordinate(chunkZ);
-					if (region.hasChunk(relChunkX, relChunkZ)) {
-						// Load the chunk
-						final DataInputStream dis = region.getChunkDataInputStream(relChunkX, relChunkZ);
-						final CompoundTag chunk = NbtIo.read(dis);
+					
+					// Load the chunk
+					final DataInputStream dis = region.getChunkDataInputStream(relChunkX, relChunkZ);
+					final CompoundTag chunk;
+					if (dis == null) {
+						chunk = new CompoundTag();
+						final CompoundTag level = new CompoundTag();
+						level.put("Sections", new ListTag<CompoundTag>());
+						chunk.put("Level", level);
+					} else {
+						chunk = NbtIo.read(dis);
 						dis.close();
-						
-						// Update the chunk
-						updateChunk(world, chunk, chunkX, chunkZ, xMin, yMin, zMin, xMax, yMax, zMax);
-						
-						// Write the chunk
-						final DataOutputStream dos = region.getChunkDataOutputStream(relChunkX, relChunkZ);
-						NbtIo.write(chunk, dos);
-						dos.close();
 					}
+					
+					// Update the chunk
+					updateChunk(world, chunk, chunkX, chunkZ, xMin, yMin, zMin, xMax, yMax, zMax);
+					
+					// Write the chunk
+					final DataOutputStream dos = region.getChunkDataOutputStream(relChunkX, relChunkZ);
+					NbtIo.write(chunk, dos);
+					dos.close();
 				}
 			}
 		}
@@ -471,10 +485,21 @@ public class TemplateManager {
 					final CompoundTag section = sections.get(sectionY);
 					updateSection(world, chunkX, chunkZ, section, xMin, yMin, zMin, xMax, yMax, zMax);
 				} else {
+					CompoundTag section = null;
+					while (sectionY >= sections.size()) {
+						section = new CompoundTag();
+						final byte[] blocks = new byte[4096];
+						Arrays.fill(blocks, (byte) -1);
+						section.putByteArray("Blocks", blocks);
+						final byte[] data = new byte[2048];
+						Arrays.fill(data, (byte) -1);
+						section.putByteArray("Data", data);
+						sections.add(section);
+					}
+					
 					// Create the new section, then update it
-					final CompoundTag section = new CompoundTag();
+					section.putByte("Y", (byte) sectionY);
 					updateSection(world, chunkX, chunkZ, section, xMin, yMin, zMin, xMax, yMax, zMax);
-					sections.add(section);
 				}
 			}
 		}
@@ -485,7 +510,7 @@ public class TemplateManager {
 			final int yMax, final int zMax) {
 		if (section != null && !section.isEmpty()) {
 			final int sectionY = section.getByte("Y");
-			// log.info("Processing section: " + sectionY);
+			log.debug("Processing section: " + sectionY);
 			
 			// Determine the included blocks
 			final int sectionBlockMin = RegionUtil.getSectionBlockIntersection(sectionY, yMin);
@@ -511,8 +536,6 @@ public class TemplateManager {
 	private void updateBlock(final World world, final CompoundTag section, final int blockX,
 			final int blockY, final int blockZ) {
 		if (world != null && section != null && !section.isEmpty()) {
-			// log.info("Processing block: " + blockX + ":" + blockY + ":" + blockZ);
-			
 			// Determine the relative block location
 			final int relX = getChunkRelativeBlockCoordinate(blockX);
 			final int relY = getSectionRelativeBlockCoordinate(blockY);
@@ -525,8 +548,15 @@ public class TemplateManager {
 					+ block.getId() + ":" + block.getData());
 			
 			// Set the block type and data in the section
-			final byte[] blocks = section.getByteArray("Blocks");
-			final DataLayer dataValues = new DataLayer(section.getByteArray("Data"), 4);
+			byte[] blocks = section.getByteArray("Blocks");
+			if (blocks.length == 0) {
+				blocks = new byte[4096];
+			}
+			byte[] data = section.getByteArray("Data");
+			if (data.length == 0) {
+				data = new byte[2048];
+			}
+			final DataLayer dataValues = new DataLayer(data, 4);
 			blocks[relY << 8 | relZ << 4 | relX] = (byte) block.getId();
 			dataValues.set(relX, relY, relZ, block.getData());
 		}
@@ -548,6 +578,15 @@ public class TemplateManager {
 			region = new RegionFile(regionFile);
 		}
 		return region;
+	}
+	
+	private RegionFile newRegionFile(final String name, final DimensionType type, final int regionX,
+			final int regionZ) throws IOException {
+		final String resourceName = "r." + regionX + "." + regionZ + ".mca";
+		final File templateDir = getTemplateDir(name, type);
+		final File regionDir = new File(templateDir, "region");
+		final File regionFile = new File(regionDir, resourceName);
+		return new RegionFile(regionFile);
 	}
 	
 	// private String printHeightMap(final int[] bytes, final int offset) {

@@ -47,7 +47,7 @@ public class MockBlock implements Block {
 	
 	@Override
 	public BlockType getType() {
-		return BlockType.Air;
+		return BlockType.Grass;
 	}
 	
 	@Override

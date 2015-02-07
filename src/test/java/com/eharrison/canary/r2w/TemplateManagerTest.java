@@ -90,13 +90,35 @@ public class TemplateManagerTest {
 		final Future<Boolean> futureCreate = templateManager.createTemplate("default",
 				DimensionType.NORMAL);
 		if (futureCreate.get()) {
-			assertNotEquals(BlockType.Air,
+			assertNotEquals(BlockType.Grass,
 					templateManager.getTemplateBlock("default", DimensionType.NORMAL, -1, 62, -1));
 			final Future<Boolean> futureRestore = templateManager.update("default", DimensionType.NORMAL,
 					-1, 62, -1, 1, 63, 1);
 			if (futureRestore.get()) {
-				assertEquals(BlockType.Air,
+				assertEquals(BlockType.Grass,
 						templateManager.getTemplateBlock("default", DimensionType.NORMAL, -1, 62, -1));
+			} else {
+				fail("Failed to update the template");
+			}
+		} else {
+			fail("Failed to update the template");
+		}
+	}
+	
+	@Test
+	public void updateOutsideOfTemplate() throws Exception {
+		final Future<Boolean> futureCreate = templateManager.createTemplate("default",
+				DimensionType.NORMAL);
+		if (futureCreate.get()) {
+			assertNull(templateManager
+					.getTemplateBlock("default", DimensionType.NORMAL, -1000, 62, -1000));
+			final Future<Boolean> futureUpdate = templateManager.update("default", DimensionType.NORMAL,
+					-1000, 62, -1000, -999, 63, -999);
+			if (futureUpdate.get()) {
+				assertEquals(BlockType.Grass,
+						templateManager.getTemplateBlock("default", DimensionType.NORMAL, -1000, 62, -1000));
+				assertNull(templateManager.getTemplateBlock("default", DimensionType.NORMAL, -1000, 61,
+						-1000));
 			} else {
 				fail("Failed to update the template");
 			}
