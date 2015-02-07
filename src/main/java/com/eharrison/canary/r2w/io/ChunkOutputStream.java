@@ -5,11 +5,12 @@ import java.io.ByteArrayOutputStream;
 public class ChunkOutputStream extends ByteArrayOutputStream {
 	private static final int BUFFER_SIZE = 8096; // initialize to 8KB
 	
-	private RegionFile regionFile;
+	private final RegionFile regionFile;
 	private final int x, z;
 	
 	public ChunkOutputStream(final RegionFile regionFile, final int x, final int z) {
 		super(BUFFER_SIZE);
+		this.regionFile = regionFile;
 		this.x = x;
 		this.z = z;
 	}

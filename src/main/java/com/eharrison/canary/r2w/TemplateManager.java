@@ -3,6 +3,7 @@ package com.eharrison.canary.r2w;
 import static com.eharrison.canary.r2w.RegionUtil.*;
 
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Callable;
@@ -60,7 +61,8 @@ public class TemplateManager {
 					log.info("Unloading world");
 					loaded = true;
 					worldManager.getWorld(name, type, false).broadcastMessage(
-							"Creating a world template, GET OUT!");
+							"Creating a world template, You have to GET OUT!");
+					// TODO: Add pause?
 					worldManager.unloadWorld(name, type, true);
 				}
 				
@@ -104,6 +106,53 @@ public class TemplateManager {
 					success = FileUtils.deleteQuietly(templateDir);
 				}
 				log.info("Removed template " + name + "_" + type.getName() + ": " + success);
+				return success;
+			}
+		});
+	}
+	
+	public Future<Boolean> update(final String name, final DimensionType type, final int x1,
+			final int y1, final int z1, final int x2, final int y2, final int z2) {
+		return TaskManager.submitTask(new Callable<Boolean>() {
+			@Override
+			public Boolean call() throws Exception {
+				boolean success = false;
+				
+				// Load the target world
+				final World world = worldManager.getWorld(name, type, true);
+				if (world != null) {
+					success = true;
+					
+					// Determine the block bounds
+					final int xMin = Math.min(x1, x2);
+					final int xMax = Math.max(x1, x2);
+					final int yMin = Math.max(Math.min(y1, y2), 0);
+					final int yMax = Math.min(Math.max(y1, y2), 255);
+					final int zMin = Math.min(z1, z2);
+					final int zMax = Math.max(z1, z2);
+					
+					// Determine the included regions
+					final int regionXMin = RegionUtil.getRegionForBlockCoordinate(xMin);
+					final int regionXMax = RegionUtil.getRegionForBlockCoordinate(xMax);
+					final int regionZMin = RegionUtil.getRegionForBlockCoordinate(zMin);
+					final int regionZMax = RegionUtil.getRegionForBlockCoordinate(zMax);
+					
+					// For each region
+					for (int regionX = regionXMin; regionX <= regionXMax; regionX++) {
+						for (int regionZ = regionZMin; regionZ <= regionZMax; regionZ++) {
+							// Load the appropriate region file
+							final RegionFile region = loadRegionFile(name, type, regionX, regionZ);
+							if (region != null) {
+								log.info("Processing region: " + regionX + ":" + regionZ);
+								updateRegion(world, region, regionX, regionZ, xMin, yMin, zMin, xMax, yMax, zMax);
+								
+								// Close the region File
+								region.close();
+							}
+						}
+					}
+				}
+				
 				return success;
 			}
 		});
@@ -358,6 +407,128 @@ public class TemplateManager {
 			final Block block = world.getBlockAt(blockX, blockY, blockZ);
 			block.setType(BlockType.fromIdAndData(type, data));
 			block.update();
+		}
+	}
+	
+	private void updateRegion(final World world, final RegionFile region, final int regionX,
+			final int regionZ, final int xMin, final int yMin, final int zMin, final int xMax,
+			final int yMax, final int zMax) throws IOException {
+		if (world != null && region != null) {
+			// Determine the included blocks
+			final int regionBlockXMin = RegionUtil.getRegionBlockIntersection(regionX, xMin);
+			final int regionBlockXMax = RegionUtil.getRegionBlockIntersection(regionX, xMax);
+			final int regionBlockZMin = RegionUtil.getRegionBlockIntersection(regionZ, zMin);
+			final int regionBlockZMax = RegionUtil.getRegionBlockIntersection(regionZ, zMax);
+			
+			// Determine the included chunks
+			final int chunkXMin = RegionUtil.getChunkForBlockCoordinate(regionBlockXMin);
+			final int chunkXMax = RegionUtil.getChunkForBlockCoordinate(regionBlockXMax);
+			final int chunkZMin = RegionUtil.getChunkForBlockCoordinate(regionBlockZMin);
+			final int chunkZMax = RegionUtil.getChunkForBlockCoordinate(regionBlockZMax);
+			
+			// For each chunk
+			for (int chunkX = chunkXMin; chunkX <= chunkXMax; chunkX++) {
+				for (int chunkZ = chunkZMin; chunkZ <= chunkZMax; chunkZ++) {
+					// Get the relative location of the chunk
+					final int relChunkX = RegionUtil.getRegionRelativeChunkCoordinate(chunkX);
+					final int relChunkZ = RegionUtil.getRegionRelativeChunkCoordinate(chunkZ);
+					if (region.hasChunk(relChunkX, relChunkZ)) {
+						// Load the chunk
+						final DataInputStream dis = region.getChunkDataInputStream(relChunkX, relChunkZ);
+						final CompoundTag chunk = NbtIo.read(dis);
+						dis.close();
+						
+						// Update the chunk
+						updateChunk(world, chunk, chunkX, chunkZ, xMin, yMin, zMin, xMax, yMax, zMax);
+						
+						// Write the chunk
+						final DataOutputStream dos = region.getChunkDataOutputStream(relChunkX, relChunkZ);
+						NbtIo.write(chunk, dos);
+						dos.close();
+					}
+				}
+			}
+		}
+	}
+	
+	private void updateChunk(final World world, final CompoundTag chunk, final int chunkX,
+			final int chunkZ, final int xMin, final int yMin, final int zMin, final int xMax,
+			final int yMax, final int zMax) {
+		if (chunk != null && !chunk.isEmpty()) {
+			final CompoundTag level = chunk.getCompound("Level");
+			log.info("Processing chunk: " + chunkX + ":" + chunkZ);
+			
+			// Determine the included sections
+			final int sectionMin = RegionUtil.getSectionForBlockCoordinate(yMin);
+			final int sectionMax = RegionUtil.getSectionForBlockCoordinate(yMax);
+			
+			// For each section
+			@SuppressWarnings("unchecked")
+			final ListTag<CompoundTag> sections = (ListTag<CompoundTag>) level.getList("Sections");
+			for (int sectionY = sectionMin; sectionY <= sectionMax; sectionY++) {
+				if (sectionY < sections.size()) {
+					// Restore the section
+					final CompoundTag section = sections.get(sectionY);
+					updateSection(world, chunkX, chunkZ, section, xMin, yMin, zMin, xMax, yMax, zMax);
+				} else {
+					// Create the new section, then update it
+					final CompoundTag section = new CompoundTag();
+					updateSection(world, chunkX, chunkZ, section, xMin, yMin, zMin, xMax, yMax, zMax);
+					sections.add(section);
+				}
+			}
+		}
+	}
+	
+	private void updateSection(final World world, final int chunkX, final int chunkZ,
+			final CompoundTag section, final int xMin, final int yMin, final int zMin, final int xMax,
+			final int yMax, final int zMax) {
+		if (section != null && !section.isEmpty()) {
+			final int sectionY = section.getByte("Y");
+			// log.info("Processing section: " + sectionY);
+			
+			// Determine the included blocks
+			final int sectionBlockMin = RegionUtil.getSectionBlockIntersection(sectionY, yMin);
+			final int sectionBlockMax = RegionUtil.getSectionBlockIntersection(sectionY, yMax);
+			
+			for (int blockY = sectionBlockMin; blockY <= sectionBlockMax; blockY++) {
+				// Determine the included blocks
+				final int blockXMin = RegionUtil.getChunkBlockIntersection(chunkX, xMin);
+				final int blockXMax = RegionUtil.getChunkBlockIntersection(chunkX, xMax);
+				final int blockZMin = RegionUtil.getChunkBlockIntersection(chunkZ, zMin);
+				final int blockZMax = RegionUtil.getChunkBlockIntersection(chunkZ, zMax);
+				
+				// For each block
+				for (int blockX = blockXMin; blockX <= blockXMax; blockX++) {
+					for (int blockZ = blockZMin; blockZ <= blockZMax; blockZ++) {
+						updateBlock(world, section, blockX, blockY, blockZ);
+					}
+				}
+			}
+		}
+	}
+	
+	private void updateBlock(final World world, final CompoundTag section, final int blockX,
+			final int blockY, final int blockZ) {
+		if (world != null && section != null && !section.isEmpty()) {
+			// log.info("Processing block: " + blockX + ":" + blockY + ":" + blockZ);
+			
+			// Determine the relative block location
+			final int relX = getChunkRelativeBlockCoordinate(blockX);
+			final int relY = getSectionRelativeBlockCoordinate(blockY);
+			final int relZ = getChunkRelativeBlockCoordinate(blockZ);
+			
+			// Get the block in the target world
+			final BlockType block = world.getBlockAt(blockX, blockY, blockZ).getType();
+			
+			log.debug("Setting template: " + blockX + ":" + blockY + ":" + blockZ + " to "
+					+ block.getId() + ":" + block.getData());
+			
+			// Set the block type and data in the section
+			final byte[] blocks = section.getByteArray("Blocks");
+			final DataLayer dataValues = new DataLayer(section.getByteArray("Data"), 4);
+			blocks[relY << 8 | relZ << 4 | relX] = (byte) block.getId();
+			dataValues.set(relX, relY, relZ, block.getData());
 		}
 	}
 	

@@ -47,8 +47,7 @@ public class MockBlock implements Block {
 	
 	@Override
 	public BlockType getType() {
-		// TODO Auto-generated method stub
-		return null;
+		return BlockType.Air;
 	}
 	
 	@Override
