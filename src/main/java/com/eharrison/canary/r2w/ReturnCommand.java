@@ -6,6 +6,7 @@ import java.util.concurrent.Future;
 
 import net.canarymod.api.entity.living.humanoid.Player;
 import net.canarymod.api.world.DimensionType;
+import net.canarymod.api.world.blocks.Block;
 import net.canarymod.chat.MessageReceiver;
 import net.canarymod.commandsys.Command;
 import net.canarymod.commandsys.CommandListener;
@@ -15,6 +16,26 @@ public class ReturnCommand implements CommandListener {
 	
 	public ReturnCommand(final TemplateManager templateManager) {
 		this.templateManager = templateManager;
+	}
+	
+	@Command(aliases = {
+		"info"
+	}, parent = "r2w", description = "Get Block info", permissions = {
+		"r2w.info"
+	}, toolTip = "/r2w info x y z", min = 4, max = 4)
+	public void getBlockInfo(final MessageReceiver caller, final String[] parameters)
+			throws InterruptedException, ExecutionException {
+		if (caller instanceof Player) {
+			final int x = Integer.parseInt(parameters[1]);
+			final int y = Integer.parseInt(parameters[2]);
+			final int z = Integer.parseInt(parameters[3]);
+			
+			final Player player = (Player) caller;
+			final Block block = player.getWorld().getBlockAt(x, y, z);
+			sendMessage(caller, "Type: " + block.getType().getId() + ":" + block.getType().getData());
+			sendMessage(caller, "Data: " + block.getData());
+			sendMessage(caller, "Properties: " + block.getProperties());
+		}
 	}
 	
 	@Command(aliases = {

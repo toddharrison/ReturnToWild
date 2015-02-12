@@ -404,16 +404,30 @@ public class TemplateManager {
 			// Get the block type and data from the section
 			final byte[] blocks = section.getByteArray("Blocks");
 			final DataLayer dataValues = new DataLayer(section.getByteArray("Data"), 4);
-			final short type = blocks[relY << 8 | relZ << 4 | relX];
-			final short data = (short) dataValues.get(relX, relY, relZ);
+			final int type = blocks[relY << 8 | relZ << 4 | relX] & 0xFF;
+			final int data = dataValues.get(relX, relY, relZ);
 			
 			log.debug("Setting block: " + blockX + ":" + blockY + ":" + blockZ + " to " + type + ":"
 					+ data);
 			
 			// Set the block in the target world
 			final Block block = world.getBlockAt(blockX, blockY, blockZ);
-			block.setType(BlockType.fromIdAndData(type, data));
-			block.update();
+			final BlockType newType = BlockType.fromIdAndData(type, data);
+			if (newType == null) {
+				log.warn("Failed setting bad block: " + type + ":" + data);
+			} else {
+				block.setType(newType);
+				
+				// // TODO set block properties as appropriate
+				// final BlockProperty facing = block.getPropertyForName("facing");
+				// final BlockProperty half = block.getPropertyForName("half");
+				// final BlockProperty shape = block.getPropertyForName("shape");
+				// block.setPropertyValue(facing, BlockFace.EAST);
+				// block.setPropertyValue(half, BlockPropertyEnums.BlockVerticalHalf.LOWER);
+				// block.setPropertyValue(shape, BlockPropertyEnums.StairsShape.STRAIGHT);
+				
+				block.update();
+			}
 		}
 	}
 	
