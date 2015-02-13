@@ -9,7 +9,6 @@ import net.canarymod.api.world.blocks.BlockType;
 import net.canarymod.api.world.blocks.properties.helpers.AnvilProperties;
 import net.canarymod.api.world.blocks.properties.helpers.BannerProperties;
 import net.canarymod.api.world.blocks.properties.helpers.BedProperties;
-import net.canarymod.api.world.blocks.properties.helpers.BedProperties.Half;
 import net.canarymod.api.world.blocks.properties.helpers.BlockProperties;
 import net.canarymod.api.world.blocks.properties.helpers.BrewingStandProperties;
 import net.canarymod.api.world.blocks.properties.helpers.ButtonProperties;
@@ -38,13 +37,14 @@ import net.canarymod.api.world.blocks.properties.helpers.LeavesProperties;
 import net.canarymod.api.world.blocks.properties.helpers.LeverProperties;
 import net.canarymod.api.world.blocks.properties.helpers.LiquidProperties;
 import net.canarymod.api.world.blocks.properties.helpers.LogProperties;
-import net.canarymod.api.world.blocks.properties.helpers.LogProperties.Axis;
 import net.canarymod.api.world.blocks.properties.helpers.NetherWartProperties;
+import net.canarymod.api.world.blocks.properties.helpers.PistonHeadProperties;
 import net.canarymod.api.world.blocks.properties.helpers.PistonProperties;
 import net.canarymod.api.world.blocks.properties.helpers.PortalProperties;
 import net.canarymod.api.world.blocks.properties.helpers.PressurePlateProperties;
 import net.canarymod.api.world.blocks.properties.helpers.RailProperties;
 import net.canarymod.api.world.blocks.properties.helpers.RedstoneComparatorProperties;
+import net.canarymod.api.world.blocks.properties.helpers.RedstoneRepeaterProperties;
 import net.canarymod.api.world.blocks.properties.helpers.RedstoneWireProperties;
 import net.canarymod.api.world.blocks.properties.helpers.ReedProperties;
 import net.canarymod.api.world.blocks.properties.helpers.RotatedPillarProperties;
@@ -63,7 +63,7 @@ import net.canarymod.api.world.blocks.properties.helpers.TripwireProperties;
 import net.canarymod.api.world.blocks.properties.helpers.VineProperties;
 import net.canarymod.api.world.blocks.properties.helpers.WallSignProperties;
 import net.canarymod.api.world.blocks.properties.helpers.WeightedPressurePlateProperties;
-import net.canarymod.api.world.blocks.properties.helpers.WoodProperties.Variant;
+import net.canarymod.api.world.blocks.properties.helpers.WoodProperties;
 
 public final class AnvilConverter {
 	public static void convert(final Block block, final byte newType, final int newData) {
@@ -74,31 +74,36 @@ public final class AnvilConverter {
 		
 		Integer stage = null;
 		Integer level = null;
-		Integer axis = null;
+		LogProperties.Axis axis = null;
+		BlockFace.Axis blockAxis = null;
 		Boolean noDecay = null;
 		Boolean checkDecay = null;
 		BlockFace facing = null;
 		Boolean triggered = null;
 		Boolean occupied = null;
-		Integer part = null;
-		Integer shape = null;
+		BedProperties.Half bedHalf = null;
+		DoorProperties.Half doorHalf = null;
+		final Integer part = null;
+		final Integer shape = null;
+		RailProperties.Direction railShape = null;
 		Boolean powered = null;
 		Boolean extended = null;
-		String type = null;
+		final String type = null;
 		Boolean seamless = null;
-		Integer half = null;
+		SlabProperties.Half half = null;
+		StairsProperties.Half stairHalf = null;
 		Boolean explode = null;
 		Integer age = null;
 		Integer power = null;
 		Integer moisture = null;
 		Integer rotation = null;
-		Integer hinge = null;
+		DoorProperties.HingePosition hinge = null;
 		Boolean open = null;
 		Integer layer = null;
 		Boolean hasRecord = null;
 		Integer bites = null;
 		Integer delay = null;
-		Integer variant = null;
+		WoodProperties.Variant variant = null;
 		Boolean south = null;
 		Boolean west = null;
 		Boolean north = null;
@@ -112,18 +117,26 @@ public final class AnvilConverter {
 		Boolean disarmed = null;
 		Boolean nodrop = null;
 		Integer damage = null;
-		String mode = null;
+		RedstoneComparatorProperties.Mode mode = null;
 		Boolean enabled = null;
-		Integer orientation = null;
+		final Integer orientation = null;
+		HugeMushroomProperties.Variant mushroomVariant = null;
+		PistonHeadProperties.Type pistonType = null;
+		LeverProperties.Orientation leverFacing = null;
+		TrapDoorProperties.Half trapdoorHalf = null;
+		BlockFace.Axis hayAxis = null;
 		
 		switch (id) {
 			case 6: // minecraft:sapling
 				
-				variant = getBitFlag(newData, 0, 3);
+				variant = toValue(getBitFlag(newData, 0, 3), WoodProperties.Variant.OAK,
+						WoodProperties.Variant.SPRUCE, WoodProperties.Variant.BIRCH,
+						WoodProperties.Variant.JUNGLE, WoodProperties.Variant.ACACIA,
+						WoodProperties.Variant.DARK_OAK);
 				stage = getBitFlag(newData, 3, 1);
 				
 				block.setTypeId(id);
-				SaplingProperties.applyType(block, Variant.valueOf(variant));
+				SaplingProperties.applyType(block, variant);
 				SaplingProperties.applyStage(block, stage);
 				block.update();
 				
@@ -141,26 +154,56 @@ public final class AnvilConverter {
 				
 				break;
 			case 17: // minecraft:log
-			case 162: // minecraft:log2
 				
-				variant = getBitFlag(newData, 0, 2);
-				axis = getBitFlag(newData, 2, 2);
+				variant = toValue(getBitFlag(newData, 0, 2), WoodProperties.Variant.OAK,
+						WoodProperties.Variant.SPRUCE, WoodProperties.Variant.BIRCH,
+						WoodProperties.Variant.JUNGLE);
+				axis = toValue(getBitFlag(newData, 2, 2), LogProperties.Axis.Y, LogProperties.Axis.Z,
+						LogProperties.Axis.X, LogProperties.Axis.NONE);
 				
 				block.setTypeId(id);
-				LogProperties.applyVariant(block, Variant.valueOf(variant));
-				LogProperties.applyAxis(block, Axis.valueOf(axis));
+				LogProperties.applyVariant(block, variant);
+				LogProperties.applyAxis(block, axis);
+				block.update();
+				
+				break;
+			case 162: // minecraft:log2
+				
+				variant = toValue(getBitFlag(newData, 0, 2), WoodProperties.Variant.ACACIA,
+						WoodProperties.Variant.DARK_OAK);
+				axis = toValue(getBitFlag(newData, 2, 2), LogProperties.Axis.Y, LogProperties.Axis.Z,
+						LogProperties.Axis.X, LogProperties.Axis.NONE);
+				
+				block.setTypeId(id);
+				LogProperties.applyVariant(block, variant);
+				LogProperties.applyAxis(block, axis);
 				block.update();
 				
 				break;
 			case 18: // minecraft:leaves
-			case 161: // minecraft:leaves2
 				
-				variant = getBitFlag(newData, 0, 2);
+				variant = toValue(getBitFlag(newData, 0, 2), WoodProperties.Variant.OAK,
+						WoodProperties.Variant.SPRUCE, WoodProperties.Variant.BIRCH,
+						WoodProperties.Variant.JUNGLE);
 				noDecay = toBoolean(getBitFlag(newData, 2, 1));
 				checkDecay = toBoolean(getBitFlag(newData, 3, 1));
 				
 				block.setTypeId(id);
-				LeavesProperties.applyVariant(block, Variant.valueOf(variant));
+				LeavesProperties.applyVariant(block, variant);
+				LeavesProperties.applyDecayable(block, noDecay);
+				LeavesProperties.applyCheckDecay(block, checkDecay);
+				block.update();
+				
+				break;
+			case 161: // minecraft:leaves2
+				
+				variant = toValue(getBitFlag(newData, 0, 2), WoodProperties.Variant.ACACIA,
+						WoodProperties.Variant.DARK_OAK);
+				noDecay = toBoolean(getBitFlag(newData, 2, 1));
+				checkDecay = toBoolean(getBitFlag(newData, 3, 1));
+				
+				block.setTypeId(id);
+				LeavesProperties.applyVariant(block, variant);
 				LeavesProperties.applyDecayable(block, noDecay);
 				LeavesProperties.applyCheckDecay(block, checkDecay);
 				block.update();
@@ -182,12 +225,13 @@ public final class AnvilConverter {
 				
 				facing = convertFacing(id, getBitFlag(newData, 0, 2));
 				occupied = toBoolean(getBitFlag(newData, 2, 1));
-				part = getBitFlag(newData, 3, 1);
+				bedHalf = toValue(getBitFlag(newData, 3, 1), BedProperties.Half.FOOT,
+						BedProperties.Half.HEAD);
 				
 				block.setTypeId(id);
 				DirectionalBlockProperties.applyFacing(block, facing);
 				BedProperties.applyOccupided(block, occupied);
-				BedProperties.applyPart(block, Half.valueOf(part));
+				BedProperties.applyPart(block, bedHalf);
 				block.update();
 				
 				break;
@@ -195,12 +239,16 @@ public final class AnvilConverter {
 			case 28: // minecraft:detector_rail
 			case 157: // minecraft:activator_rail
 				
-				shape = getBitFlag(newData, 0, 3);
+				railShape = toValue(getBitFlag(newData, 0, 3), RailProperties.Direction.NORTH_SOUTH,
+						RailProperties.Direction.EAST_WEST, RailProperties.Direction.ASCENDING_EAST,
+						RailProperties.Direction.ASCENDING_WEST, RailProperties.Direction.ASCENDING_NORTH,
+						RailProperties.Direction.ASCENDING_SOUTH);
 				powered = toBoolean(getBitFlag(newData, 3, 1));
 				
 				block.setTypeId(id);
-				RailProperties.applyShape(block, RailProperties.Direction.valueOf(shape));
-				RailProperties.applyPowered(block, powered);
+				RailProperties.applyShape(block, railShape);
+				// TODO applyPowered
+				// RailProperties.applyPowered(block, powered);
 				block.update();
 				
 				break;
@@ -220,10 +268,12 @@ public final class AnvilConverter {
 			case 36: // minecraft:piston_extension
 				
 				facing = convertFacing(id, getBitFlag(newData, 0, 3));
-				type = toValue(getBitFlag(newData, 3, 1), "normal", "sticky");
+				pistonType = toValue(getBitFlag(newData, 3, 1), PistonHeadProperties.Type.DEFAULT,
+						PistonHeadProperties.Type.STICKY);
 				
 				block.setTypeId(id);
-				// TODO properties
+				PistonHeadProperties.applyFacing(block, facing);
+				PistonHeadProperties.applyType(block, pistonType);
 				block.update();
 				
 				break;
@@ -243,10 +293,11 @@ public final class AnvilConverter {
 			case 126: // minecraft:wood_slab
 				
 				data = getBitFlag(newData, 0, 3);
-				half = getBitFlag(newData, 3, 1);
+				half = toValue(getBitFlag(newData, 3, 1), SlabProperties.Half.LOWER,
+						SlabProperties.Half.UPPER);
 				
 				block.setType(BlockType.fromIdAndData(id, data));
-				SlabProperties.applyHalf(block, SlabProperties.Half.valueOf(half));
+				SlabProperties.applyHalf(block, half);
 				block.update();
 				
 				break;
@@ -294,11 +345,12 @@ public final class AnvilConverter {
 			case 180: // minecraft:red_sandstone_stairs
 				
 				facing = convertFacing(id, getBitFlag(newData, 0, 2));
-				half = getBitFlag(newData, 2, 2);
+				stairHalf = toValue(getBitFlag(newData, 2, 2), StairsProperties.Half.LOWER,
+						StairsProperties.Half.UPPER);
 				
 				block.setTypeId(id);
 				StairsProperties.applyFacing(block, facing);
-				StairsProperties.applyHalf(block, StairsProperties.Half.valueOf(half));
+				StairsProperties.applyHalf(block, stairHalf);
 				block.update();
 				
 				break;
@@ -368,12 +420,13 @@ public final class AnvilConverter {
 			case 196: // minecraft:acacia_door
 			case 197: // minecraft:dark_oak_door
 				
-				half = getBitFlag(newData, 0, 1);
+				doorHalf = toValue(getBitFlag(newData, 0, 1), DoorProperties.Half.LOWER,
+						DoorProperties.Half.UPPER);
 				
 				block.setTypeId(id);
-				DoorProperties.applyHalf(block, DoorProperties.Half.valueOf(half));
-				switch (half) {
-					case 0:
+				DoorProperties.applyHalf(block, doorHalf);
+				switch (doorHalf) {
+					case LOWER:
 						
 						open = toBoolean(getBitFlag(newData, 1, 1));
 						facing = convertFacing(id, getBitFlag(newData, 2, 2));
@@ -382,12 +435,13 @@ public final class AnvilConverter {
 						DoorProperties.applyFacing(block, facing);
 						
 						break;
-					case 1:
+					case UPPER:
 						
-						hinge = getBitFlag(newData, 1, 1);
+						hinge = toValue(getBitFlag(newData, 1, 1), DoorProperties.HingePosition.LEFT,
+								DoorProperties.HingePosition.RIGHT);
 						powered = toBoolean(getBitFlag(newData, 2, 1));
 						
-						DoorProperties.applyHinge(block, DoorProperties.HingePosition.valueOf(hinge));
+						DoorProperties.applyHinge(block, hinge);
 						DoorProperties.applyPowered(block, powered);
 						
 						break;
@@ -406,10 +460,13 @@ public final class AnvilConverter {
 				break;
 			case 66: // minecraft:rail
 				
-				shape = newData;
+				railShape = toValue(getBitFlag(newData, 0, 3), RailProperties.Direction.NORTH_SOUTH,
+						RailProperties.Direction.EAST_WEST, RailProperties.Direction.ASCENDING_EAST,
+						RailProperties.Direction.ASCENDING_WEST, RailProperties.Direction.ASCENDING_NORTH,
+						RailProperties.Direction.ASCENDING_SOUTH);
 				
 				block.setTypeId(id);
-				RailProperties.applyShape(block, RailProperties.Direction.valueOf(shape));
+				RailProperties.applyShape(block, railShape);
 				block.update();
 				
 				break;
@@ -424,17 +481,15 @@ public final class AnvilConverter {
 				break;
 			case 69: // minecraft:lever
 				
-				orientation = getBitFlag(newData, 0, 3);
+				leverFacing = toValue(getBitFlag(newData, 0, 3), LeverProperties.Orientation.DOWN_X,
+						LeverProperties.Orientation.EAST, LeverProperties.Orientation.WEST,
+						LeverProperties.Orientation.SOUTH, LeverProperties.Orientation.NORTH,
+						LeverProperties.Orientation.UP_Z, LeverProperties.Orientation.UP_X,
+						LeverProperties.Orientation.DOWN_Z);
 				powered = toBoolean(getBitFlag(newData, 3, 1));
 				
 				block.setTypeId(id);
-				LeverProperties.applyFacing(
-						block,
-						toValue(orientation, LeverProperties.Orientation.DOWN_X,
-								LeverProperties.Orientation.EAST, LeverProperties.Orientation.WEST,
-								LeverProperties.Orientation.SOUTH, LeverProperties.Orientation.NORTH,
-								LeverProperties.Orientation.UP_Z, LeverProperties.Orientation.UP_X,
-								LeverProperties.Orientation.DOWN_Z));
+				LeverProperties.applyFacing(block, leverFacing);
 				LeverProperties.applyPowered(block, powered);
 				block.update();
 				
@@ -509,11 +564,10 @@ public final class AnvilConverter {
 				break;
 			case 90: // minecraft:portal
 				
-				axis = newData;
+				blockAxis = toValue(newData, null, BlockFace.Axis.Z, BlockFace.Axis.X);
 				
 				block.setTypeId(id);
-				// TODO
-				PortalProperties.applyAxis(block, BlockFace.Axis.values()[axis]);
+				PortalProperties.applyAxis(block, blockAxis);
 				block.update();
 				
 				break;
@@ -533,7 +587,9 @@ public final class AnvilConverter {
 				delay = getBitFlag(newData, 2, 2);
 				
 				block.setTypeId(id);
-				// TODO properties
+				// TODO set facing
+				// RedstoneRepeaterProperties.
+				RedstoneRepeaterProperties.applyDelay(block, delay);
 				block.update();
 				
 				break;
@@ -542,23 +598,31 @@ public final class AnvilConverter {
 				
 				facing = convertFacing(id, getBitFlag(newData, 0, 2));
 				open = toBoolean(getBitFlag(newData, 2, 1));
-				half = getBitFlag(newData, 3, 1);
+				trapdoorHalf = toValue(getBitFlag(newData, 3, 1), TrapDoorProperties.Half.LOWER,
+						TrapDoorProperties.Half.UPPER);
 				
 				block.setTypeId(id);
 				TrapDoorProperties.applyFacing(block, facing);
 				TrapDoorProperties.applyOpen(block, open);
-				TrapDoorProperties.applyHalf(block, TrapDoorProperties.Half.valueOf(half));
+				TrapDoorProperties.applyHalf(block, trapdoorHalf);
 				block.update();
 				
 				break;
 			case 99: // minecraft:brown_mushroom_block
 			case 100: // minecraft:red_mushroom_block
 				
-				variant = newData;
+				mushroomVariant = toValue(newData, HugeMushroomProperties.Variant.ALL_INSIDE,
+						HugeMushroomProperties.Variant.NORTH_WEST, HugeMushroomProperties.Variant.NORTH,
+						HugeMushroomProperties.Variant.NORTH_EAST, HugeMushroomProperties.Variant.WEST,
+						HugeMushroomProperties.Variant.CENTER, HugeMushroomProperties.Variant.EAST,
+						HugeMushroomProperties.Variant.SOUTH_WEST, HugeMushroomProperties.Variant.SOUTH,
+						HugeMushroomProperties.Variant.SOUTH_EAST, HugeMushroomProperties.Variant.STEM, null,
+						null, null, HugeMushroomProperties.Variant.ALL_OUTSIDE,
+						HugeMushroomProperties.Variant.ALL_STEM);
 				
 				block.setTypeId(id);
-				BlockProperties.apply(block, HugeMushroomProperties.variant,
-						HugeMushroomProperties.Variant.valueOf(variant));
+				// TODO should be HugeMushroomProperties
+				BlockProperties.apply(block, HugeMushroomProperties.variant, mushroomVariant);
 				block.update();
 				
 				break;
@@ -700,7 +764,7 @@ public final class AnvilConverter {
 				triggered = toBoolean(newData);
 				
 				block.setTypeId(id);
-				// TODO
+				// TODO should be applyTriggered
 				CommandBlockProperties.apply(block, triggered);
 				block.update();
 				
@@ -733,7 +797,7 @@ public final class AnvilConverter {
 				power = newData;
 				
 				block.setTypeId(id);
-				// TODO
+				// TODO should be named applyPower
 				WeightedPressurePlateProperties.applyPowered(block, power);
 				block.update();
 				
@@ -742,13 +806,13 @@ public final class AnvilConverter {
 			case 150: // minecraft:powered_comparator
 				
 				facing = convertFacing(id, getBitFlag(newData, 0, 2));
-				mode = toValue(getBitFlag(newData, 2, 1), "compare", "subtract");
+				mode = toValue(getBitFlag(newData, 2, 1), RedstoneComparatorProperties.Mode.COMPARE,
+						RedstoneComparatorProperties.Mode.SUBTRACT);
 				powered = toBoolean(getBitFlag(newData, 3, 1));
 				
 				block.setTypeId(id);
 				// TODO facing property
-				RedstoneComparatorProperties.applyMode(block,
-						RedstoneComparatorProperties.Mode.valueOf(mode));
+				RedstoneComparatorProperties.applyMode(block, mode);
 				RedstoneComparatorProperties.applyPowered(block, powered);
 				block.update();
 				
@@ -775,11 +839,11 @@ public final class AnvilConverter {
 				break;
 			case 170: // minecraft:hay_block
 				
-				axis = newData;
+				hayAxis = toValue(newData, BlockFace.Axis.Y, BlockFace.Axis.Z, BlockFace.Axis.X);
 				
 				block.setTypeId(id);
-				// TODO
-				RotatedPillarProperties.applyAxis(block, BlockFace.Axis.values()[axis]);
+				// TODO axis facing
+				RotatedPillarProperties.applyAxis(block, hayAxis);
 				block.update();
 				
 				break;
@@ -975,6 +1039,7 @@ public final class AnvilConverter {
 		return face;
 	}
 	
+	@Deprecated
 	public static Map<String, Object> convert(final byte newType, final int newData) {
 		// Convert unsigned byte to int
 		final int iType = newType & 0xFF;
@@ -1679,6 +1744,7 @@ public final class AnvilConverter {
 		return bool;
 	}
 	
+	@Deprecated
 	public static String toString(final Integer index, final String... strings) {
 		String str = null;
 		if (index != null) {
