@@ -164,8 +164,8 @@ public final class AnvilConverter {
 				variant = toValue(getBitFlag(newData, 0, 2), WoodProperties.Variant.OAK,
 						WoodProperties.Variant.SPRUCE, WoodProperties.Variant.BIRCH,
 						WoodProperties.Variant.JUNGLE);
-				axis = toValue(getBitFlag(newData, 2, 2), LogProperties.Axis.Y, LogProperties.Axis.Z,
-						LogProperties.Axis.X, LogProperties.Axis.NONE);
+				axis = toValue(getBitFlag(newData, 2, 2), LogProperties.Axis.Y, LogProperties.Axis.X,
+						LogProperties.Axis.Z, LogProperties.Axis.NONE);
 				
 				block.setTypeId(id);
 				LogProperties.applyVariant(block, variant);
@@ -177,8 +177,8 @@ public final class AnvilConverter {
 				
 				variant = toValue(getBitFlag(newData, 0, 2), WoodProperties.Variant.ACACIA,
 						WoodProperties.Variant.DARK_OAK);
-				axis = toValue(getBitFlag(newData, 2, 2), LogProperties.Axis.Y, LogProperties.Axis.Z,
-						LogProperties.Axis.X, LogProperties.Axis.NONE);
+				axis = toValue(getBitFlag(newData, 2, 2), LogProperties.Axis.Y, LogProperties.Axis.X,
+						LogProperties.Axis.Z, LogProperties.Axis.NONE);
 				
 				block.setTypeId(id);
 				LogProperties.applyVariant(block, variant);
