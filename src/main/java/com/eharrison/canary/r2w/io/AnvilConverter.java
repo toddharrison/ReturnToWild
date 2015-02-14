@@ -3,6 +3,7 @@ package com.eharrison.canary.r2w.io;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.canarymod.Canary;
 import net.canarymod.api.world.blocks.Block;
 import net.canarymod.api.world.blocks.BlockFace;
 import net.canarymod.api.world.blocks.BlockType;
@@ -50,10 +51,12 @@ import net.canarymod.api.world.blocks.properties.helpers.RedstoneRepeaterPropert
 import net.canarymod.api.world.blocks.properties.helpers.RedstoneWireProperties;
 import net.canarymod.api.world.blocks.properties.helpers.ReedProperties;
 import net.canarymod.api.world.blocks.properties.helpers.RotatedPillarProperties;
+import net.canarymod.api.world.blocks.properties.helpers.SandProperties;
 import net.canarymod.api.world.blocks.properties.helpers.SaplingProperties;
 import net.canarymod.api.world.blocks.properties.helpers.SkullProperties;
 import net.canarymod.api.world.blocks.properties.helpers.SlabProperties;
 import net.canarymod.api.world.blocks.properties.helpers.SnowProperties;
+import net.canarymod.api.world.blocks.properties.helpers.SpongeProperties;
 import net.canarymod.api.world.blocks.properties.helpers.StairsProperties;
 import net.canarymod.api.world.blocks.properties.helpers.StandingSignProperties;
 import net.canarymod.api.world.blocks.properties.helpers.StemProperties;
@@ -63,9 +66,11 @@ import net.canarymod.api.world.blocks.properties.helpers.TrapDoorProperties;
 import net.canarymod.api.world.blocks.properties.helpers.TripwireHookProperties;
 import net.canarymod.api.world.blocks.properties.helpers.TripwireProperties;
 import net.canarymod.api.world.blocks.properties.helpers.VineProperties;
+import net.canarymod.api.world.blocks.properties.helpers.WallProperties;
 import net.canarymod.api.world.blocks.properties.helpers.WallSignProperties;
 import net.canarymod.api.world.blocks.properties.helpers.WeightedPressurePlateProperties;
 import net.canarymod.api.world.blocks.properties.helpers.WoodProperties;
+import net.canarymod.tasks.ServerTask;
 
 public final class AnvilConverter {
 	public static void convert(final Block block, final byte newType, final int newData) {
@@ -107,9 +112,6 @@ public final class AnvilConverter {
 		Boolean west = null;
 		Boolean north = null;
 		Boolean east = null;
-		Boolean hasBottle0 = null;
-		Boolean hasBottle1 = null;
-		Boolean hasBottle2 = null;
 		Boolean eye = null;
 		Boolean attached = null;
 		Boolean suspended = null;
@@ -125,6 +127,9 @@ public final class AnvilConverter {
 		BlockFace.Axis hayAxis = null;
 		DoublePlantProperties.Variant plantVariant = null;
 		DoublePlantProperties.Half plantHalf = null;
+		Boolean wet = null;
+		WallProperties.Variant wallVariant = null;
+		SandProperties.Variant sandVariant = null;
 		
 		switch (id) {
 			case 6: // minecraft:sapling
@@ -156,6 +161,15 @@ public final class AnvilConverter {
 			case 11: // minecraft:lava
 				
 				block.setTypeId(id);
+				block.update();
+				
+				break;
+			case 12: // minecraft:sand
+				
+				sandVariant = toValue(newData, SandProperties.Variant.SAND, SandProperties.Variant.RED_SAND);
+				
+				block.setTypeId(id);
+				SandProperties.applyVariant(block, sandVariant);
 				block.update();
 				
 				break;
@@ -212,6 +226,15 @@ public final class AnvilConverter {
 				LeavesProperties.applyVariant(block, variant);
 				LeavesProperties.applyDecayable(block, noDecay);
 				LeavesProperties.applyCheckDecay(block, checkDecay);
+				block.update();
+				
+				break;
+			case 19: // minecraft:sponge
+				
+				wet = toBoolean(newData);
+				
+				block.setTypeId(id);
+				SpongeProperties.applyWet(block, wet);
 				block.update();
 				
 				break;
@@ -689,17 +712,34 @@ public final class AnvilConverter {
 				break;
 			case 117: // minecraft:brewing_stand
 				
-				hasBottle0 = toBoolean(getBitFlag(newData, 0, 1));
-				hasBottle1 = toBoolean(getBitFlag(newData, 1, 1));
-				hasBottle2 = toBoolean(getBitFlag(newData, 2, 1));
+				final boolean hasBottle0 = toBoolean(getBitFlag(newData, 0, 1));
+				final boolean hasBottle1 = toBoolean(getBitFlag(newData, 1, 1));
+				final boolean hasBottle2 = toBoolean(getBitFlag(newData, 2, 1));
 				
 				block.setTypeId(id);
 				block.update();
-				// TODO test
-				BrewingStandProperties.applyBottle0(block, hasBottle0);
-				BrewingStandProperties.applyBottle1(block, hasBottle1);
-				BrewingStandProperties.applyBottle2(block, hasBottle2);
-				block.update();
+				
+				// TODO Error doing in one go
+				final Block foo = block;
+				Canary.getServer().addSynchronousTask(new ServerTask(Canary.getServer(), 0) {
+					@Override
+					public void run() {
+						BrewingStandProperties.applyBottle0(foo, hasBottle0);
+						BrewingStandProperties.applyBottle1(foo, hasBottle1);
+						BrewingStandProperties.applyBottle2(foo, hasBottle2);
+						block.update();
+					}
+					
+				});
+				// TaskManager.submitTask(new Runnable() {
+				// @Override
+				// public void run() {
+				// BrewingStandProperties.applyBottle0(foo, hasBottle0);
+				// BrewingStandProperties.applyBottle1(foo, hasBottle1);
+				// BrewingStandProperties.applyBottle2(foo, hasBottle2);
+				// block.update();
+				// }
+				// });
 				
 				break;
 			case 118: // minecraft:cauldron
@@ -779,6 +819,15 @@ public final class AnvilConverter {
 				block.update();
 				
 				break;
+			case 139: // minecraft:cobblestone_wall
+				
+				wallVariant = toValue(newData, WallProperties.Variant.NORMAL, WallProperties.Variant.MOSSY);
+				
+				block.setTypeId(id);
+				WallProperties.applyVariant(block, wallVariant);
+				block.update();
+				
+				break;
 			case 144: // minecraft:skull
 				
 				facing = convertFacing(id, getBitFlag(newData, 0, 2));
@@ -843,14 +892,15 @@ public final class AnvilConverter {
 				
 				block.setTypeId(id);
 				HopperProperties.applyFacing(block, facing);
-				// TODO apply enabled
-				// HopperProperties.apply(block, property, value)
+				// TODO
+				// HopperProperties.applyEnabled(block, enabled);
 				block.update();
 				
 				break;
 			case 170: // minecraft:hay_block
 				
-				hayAxis = toValue(newData, BlockFace.Axis.Y, BlockFace.Axis.Z, BlockFace.Axis.X);
+				hayAxis = toValue(getBitFlag(newData, 2, 2), BlockFace.Axis.Y, BlockFace.Axis.X,
+						BlockFace.Axis.Z);
 				
 				block.setTypeId(id);
 				RotatedPillarProperties.applyAxis(block, hayAxis);
@@ -973,10 +1023,15 @@ public final class AnvilConverter {
 			case 68: // minecraft:wall_sign
 			case 130: // minecraft:ender_chest
 			case 146: // minecraft:trapped_chest
-			case 177: // minecraft:wall_banner
 				
 				face = toValue(facing, null, null, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.WEST,
 						BlockFace.EAST);
+				
+				break;
+			case 177: // minecraft:wall_banner
+				
+				// TODO
+				face = toValue(facing, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.WEST, BlockFace.EAST);
 				
 				break;
 			case 64: // minecraft:wooden_door
