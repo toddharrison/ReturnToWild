@@ -22,6 +22,7 @@ import net.visualillusionsent.utils.TaskManager;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.Logger;
 
+import com.eharrison.canary.r2w.io.AnvilConverter;
 import com.eharrison.canary.r2w.io.RegionFile;
 import com.mojang.nbt.CompoundTag;
 import com.mojang.nbt.ListTag;
@@ -407,27 +408,23 @@ public class TemplateManager {
 			final int type = blocks[relY << 8 | relZ << 4 | relX] & 0xFF;
 			final int data = dataValues.get(relX, relY, relZ);
 			
-			log.debug("Setting block: " + blockX + ":" + blockY + ":" + blockZ + " to " + type + ":"
+			log.info("Setting block: " + blockX + ":" + blockY + ":" + blockZ + " to " + type + ":"
 					+ data);
 			
 			// Set the block in the target world
 			final Block block = world.getBlockAt(blockX, blockY, blockZ);
-			final BlockType newType = BlockType.fromIdAndData(type, data);
-			if (newType == null) {
-				log.warn("Failed setting bad block: " + type + ":" + data);
-			} else {
-				block.setType(newType);
-				
-				// // TODO set block properties as appropriate
-				// final BlockProperty facing = block.getPropertyForName("facing");
-				// final BlockProperty half = block.getPropertyForName("half");
-				// final BlockProperty shape = block.getPropertyForName("shape");
-				// block.setPropertyValue(facing, BlockFace.EAST);
-				// block.setPropertyValue(half, BlockPropertyEnums.BlockVerticalHalf.LOWER);
-				// block.setPropertyValue(shape, BlockPropertyEnums.StairsShape.STRAIGHT);
-				
-				block.update();
-			}
+			AnvilConverter.convert(block, (byte) type, data);
+			
+			log.info(block);
+			
+			// final Block block = world.getBlockAt(blockX, blockY, blockZ);
+			// final BlockType newType = BlockType.fromIdAndData(type, data);
+			// if (newType == null) {
+			// log.warn("Failed setting bad block: " + type + ":" + data);
+			// } else {
+			// block.setType(newType);
+			// block.update();
+			// }
 		}
 	}
 	

@@ -9,7 +9,6 @@ import net.canarymod.api.world.blocks.BlockType;
 import net.canarymod.api.world.blocks.properties.helpers.AnvilProperties;
 import net.canarymod.api.world.blocks.properties.helpers.BannerProperties;
 import net.canarymod.api.world.blocks.properties.helpers.BedProperties;
-import net.canarymod.api.world.blocks.properties.helpers.BlockProperties;
 import net.canarymod.api.world.blocks.properties.helpers.BrewingStandProperties;
 import net.canarymod.api.world.blocks.properties.helpers.ButtonProperties;
 import net.canarymod.api.world.blocks.properties.helpers.CactusProperties;
@@ -23,6 +22,8 @@ import net.canarymod.api.world.blocks.properties.helpers.DaylightDetectorPropert
 import net.canarymod.api.world.blocks.properties.helpers.DirectionalBlockProperties;
 import net.canarymod.api.world.blocks.properties.helpers.DispenserProperties;
 import net.canarymod.api.world.blocks.properties.helpers.DoorProperties;
+import net.canarymod.api.world.blocks.properties.helpers.DoublePlantProperties;
+import net.canarymod.api.world.blocks.properties.helpers.DoubleStoneSlabProperties;
 import net.canarymod.api.world.blocks.properties.helpers.EndPortalFrameProperties;
 import net.canarymod.api.world.blocks.properties.helpers.EnderChestProperties;
 import net.canarymod.api.world.blocks.properties.helpers.FarmlandProperties;
@@ -42,6 +43,7 @@ import net.canarymod.api.world.blocks.properties.helpers.PistonHeadProperties;
 import net.canarymod.api.world.blocks.properties.helpers.PistonProperties;
 import net.canarymod.api.world.blocks.properties.helpers.PortalProperties;
 import net.canarymod.api.world.blocks.properties.helpers.PressurePlateProperties;
+import net.canarymod.api.world.blocks.properties.helpers.RailPoweredProperties;
 import net.canarymod.api.world.blocks.properties.helpers.RailProperties;
 import net.canarymod.api.world.blocks.properties.helpers.RedstoneComparatorProperties;
 import net.canarymod.api.world.blocks.properties.helpers.RedstoneRepeaterProperties;
@@ -83,12 +85,9 @@ public final class AnvilConverter {
 		Boolean occupied = null;
 		BedProperties.Half bedHalf = null;
 		DoorProperties.Half doorHalf = null;
-		final Integer part = null;
-		final Integer shape = null;
 		RailProperties.Direction railShape = null;
 		Boolean powered = null;
 		Boolean extended = null;
-		final String type = null;
 		Boolean seamless = null;
 		SlabProperties.Half half = null;
 		StairsProperties.Half stairHalf = null;
@@ -119,12 +118,13 @@ public final class AnvilConverter {
 		Integer damage = null;
 		RedstoneComparatorProperties.Mode mode = null;
 		Boolean enabled = null;
-		final Integer orientation = null;
 		HugeMushroomProperties.Variant mushroomVariant = null;
 		PistonHeadProperties.Type pistonType = null;
 		LeverProperties.Orientation leverFacing = null;
 		TrapDoorProperties.Half trapdoorHalf = null;
 		BlockFace.Axis hayAxis = null;
+		DoublePlantProperties.Variant plantVariant = null;
+		DoublePlantProperties.Half plantHalf = null;
 		
 		switch (id) {
 			case 6: // minecraft:sapling
@@ -142,14 +142,20 @@ public final class AnvilConverter {
 				
 				break;
 			case 8: // minecraft:flowing_water
-			case 9: // minecraft:water
 			case 10: // minecraft:flowing_lava
-			case 11: // minecraft:lava
 				
-				level = (Math.abs(newData - 16) + 7) % 16;
+				// level = (Math.abs(newData - 16) + 7) % 16;
+				level = newData;
 				
 				block.setTypeId(id);
 				LiquidProperties.applyLevel(block, level);
+				block.update();
+				
+				break;
+			case 9: // minecraft:water
+			case 11: // minecraft:lava
+				
+				block.setTypeId(id);
 				block.update();
 				
 				break;
@@ -228,6 +234,7 @@ public final class AnvilConverter {
 				bedHalf = toValue(getBitFlag(newData, 3, 1), BedProperties.Half.FOOT,
 						BedProperties.Half.HEAD);
 				
+				// TODO (E/W not working)
 				block.setTypeId(id);
 				DirectionalBlockProperties.applyFacing(block, facing);
 				BedProperties.applyOccupided(block, occupied);
@@ -239,16 +246,17 @@ public final class AnvilConverter {
 			case 28: // minecraft:detector_rail
 			case 157: // minecraft:activator_rail
 				
-				railShape = toValue(getBitFlag(newData, 0, 3), RailProperties.Direction.NORTH_SOUTH,
-						RailProperties.Direction.EAST_WEST, RailProperties.Direction.ASCENDING_EAST,
-						RailProperties.Direction.ASCENDING_WEST, RailProperties.Direction.ASCENDING_NORTH,
-						RailProperties.Direction.ASCENDING_SOUTH);
+				railShape = toValue(getBitFlag(newData, 0, 3), RailPoweredProperties.Direction.NORTH_SOUTH,
+						RailPoweredProperties.Direction.EAST_WEST,
+						RailPoweredProperties.Direction.ASCENDING_EAST,
+						RailPoweredProperties.Direction.ASCENDING_WEST,
+						RailPoweredProperties.Direction.ASCENDING_NORTH,
+						RailPoweredProperties.Direction.ASCENDING_SOUTH);
 				powered = toBoolean(getBitFlag(newData, 3, 1));
 				
 				block.setTypeId(id);
 				RailProperties.applyShape(block, railShape);
-				// TODO applyPowered
-				// RailProperties.applyPowered(block, powered);
+				RailPoweredProperties.applyPowered(block, powered);
 				block.update();
 				
 				break;
@@ -284,7 +292,7 @@ public final class AnvilConverter {
 				seamless = toBoolean(getBitFlag(newData, 3, 1));
 				
 				block.setType(BlockType.fromIdAndData(id, data));
-				// TODO properties
+				DoubleStoneSlabProperties.applySeamless(block, seamless);
 				block.update();
 				
 				break;
@@ -425,6 +433,7 @@ public final class AnvilConverter {
 				
 				block.setTypeId(id);
 				DoorProperties.applyHalf(block, doorHalf);
+				// TODO half is not first
 				switch (doorHalf) {
 					case LOWER:
 						
@@ -460,10 +469,12 @@ public final class AnvilConverter {
 				break;
 			case 66: // minecraft:rail
 				
-				railShape = toValue(getBitFlag(newData, 0, 3), RailProperties.Direction.NORTH_SOUTH,
+				railShape = toValue(newData, RailProperties.Direction.NORTH_SOUTH,
 						RailProperties.Direction.EAST_WEST, RailProperties.Direction.ASCENDING_EAST,
 						RailProperties.Direction.ASCENDING_WEST, RailProperties.Direction.ASCENDING_NORTH,
-						RailProperties.Direction.ASCENDING_SOUTH);
+						RailProperties.Direction.ASCENDING_SOUTH, RailProperties.Direction.SOUTH_EAST,
+						RailProperties.Direction.SOUTH_WEST, RailProperties.Direction.NORTH_WEST,
+						RailProperties.Direction.NORTH_EAST);
 				
 				block.setTypeId(id);
 				RailProperties.applyShape(block, railShape);
@@ -581,14 +592,13 @@ public final class AnvilConverter {
 				
 				break;
 			case 93: // minecraft:unpowered_repeater
-			case 94: // minecraft:unpowered_repeater
+			case 94: // minecraft:powered_repeater
 				
 				facing = convertFacing(id, getBitFlag(newData, 0, 2));
-				delay = getBitFlag(newData, 2, 2);
+				delay = getBitFlag(newData, 2, 2) + 1;
 				
 				block.setTypeId(id);
-				// TODO set facing
-				// RedstoneRepeaterProperties.
+				DirectionalBlockProperties.applyFacing(block, facing);
 				RedstoneRepeaterProperties.applyDelay(block, delay);
 				block.update();
 				
@@ -621,8 +631,7 @@ public final class AnvilConverter {
 						HugeMushroomProperties.Variant.ALL_STEM);
 				
 				block.setTypeId(id);
-				// TODO should be HugeMushroomProperties
-				BlockProperties.apply(block, HugeMushroomProperties.variant, mushroomVariant);
+				HugeMushroomProperties.applyVariant(block, mushroomVariant);
 				block.update();
 				
 				break;
@@ -685,6 +694,8 @@ public final class AnvilConverter {
 				hasBottle2 = toBoolean(getBitFlag(newData, 2, 1));
 				
 				block.setTypeId(id);
+				block.update();
+				// TODO test
 				BrewingStandProperties.applyBottle0(block, hasBottle0);
 				BrewingStandProperties.applyBottle1(block, hasBottle1);
 				BrewingStandProperties.applyBottle2(block, hasBottle2);
@@ -764,8 +775,7 @@ public final class AnvilConverter {
 				triggered = toBoolean(newData);
 				
 				block.setTypeId(id);
-				// TODO should be applyTriggered
-				CommandBlockProperties.apply(block, triggered);
+				CommandBlockProperties.applyTriggered(block, triggered);
 				block.update();
 				
 				break;
@@ -797,8 +807,7 @@ public final class AnvilConverter {
 				power = newData;
 				
 				block.setTypeId(id);
-				// TODO should be named applyPower
-				WeightedPressurePlateProperties.applyPowered(block, power);
+				WeightedPressurePlateProperties.applyPower(block, power);
 				block.update();
 				
 				break;
@@ -811,7 +820,7 @@ public final class AnvilConverter {
 				powered = toBoolean(getBitFlag(newData, 3, 1));
 				
 				block.setTypeId(id);
-				// TODO facing property
+				DirectionalBlockProperties.applyFacing(block, facing);
 				RedstoneComparatorProperties.applyMode(block, mode);
 				RedstoneComparatorProperties.applyPowered(block, powered);
 				block.update();
@@ -834,6 +843,8 @@ public final class AnvilConverter {
 				
 				block.setTypeId(id);
 				HopperProperties.applyFacing(block, facing);
+				// TODO apply enabled
+				// HopperProperties.apply(block, property, value)
 				block.update();
 				
 				break;
@@ -842,8 +853,23 @@ public final class AnvilConverter {
 				hayAxis = toValue(newData, BlockFace.Axis.Y, BlockFace.Axis.Z, BlockFace.Axis.X);
 				
 				block.setTypeId(id);
-				// TODO axis facing
 				RotatedPillarProperties.applyAxis(block, hayAxis);
+				block.update();
+				
+				break;
+			case 175: // minecraft:double_plant
+				
+				plantVariant = toValue(getBitFlag(newData, 0, 3), DoublePlantProperties.Variant.SUNFLOWER,
+						DoublePlantProperties.Variant.SYRINGA, DoublePlantProperties.Variant.GRASS,
+						DoublePlantProperties.Variant.FERN, DoublePlantProperties.Variant.ROSE,
+						DoublePlantProperties.Variant.PAEONIA);
+				plantHalf = toValue(getBitFlag(newData, 3, 1), DoublePlantProperties.Half.LOWER,
+						DoublePlantProperties.Half.UPPER);
+				
+				// TODO
+				block.setTypeId(id);
+				DoublePlantProperties.applyVariant(block, plantVariant);
+				DoublePlantProperties.applyHalf(block, plantHalf);
 				block.update();
 				
 				break;
@@ -869,13 +895,20 @@ public final class AnvilConverter {
 				
 				data = newData;
 				
-				block.setType(BlockType.fromIdAndData(id, data));
-				block.update();
+				// TODO check for null BlockType
+				final BlockType type = BlockType.fromIdAndData(id, data);
+				if (type != null) {
+					block.setType(type);
+					block.update();
+				} else {
+					// TODO log warning
+					System.out.println("ERROR");
+				}
 				
 		}
 	}
 	
-	public static BlockFace convertFacing(final short id, final int facing) {
+	private static BlockFace convertFacing(final short id, final int facing) {
 		// Convert unsigned byte to int
 		final int iType = id & 0xFF;
 		
@@ -973,7 +1006,7 @@ public final class AnvilConverter {
 				
 				break;
 			case 93: // minecraft:unpowered_repeater
-			case 94: // minecraft:unpowered_repeater
+			case 94: // minecraft:powered_repeater
 				
 				face = toValue(facing, BlockFace.SOUTH, BlockFace.WEST, BlockFace.NORTH, BlockFace.EAST);
 				
