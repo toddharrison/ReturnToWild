@@ -607,7 +607,7 @@ public final class AnvilConverter {
 				break;
 			case 90: // minecraft:portal
 				
-				blockAxis = toValue(newData, null, BlockFace.Axis.Z, BlockFace.Axis.X);
+				blockAxis = toValue(newData, null, BlockFace.Axis.X, BlockFace.Axis.Z);
 				
 				block.setTypeId(id);
 				PortalProperties.applyAxis(block, blockAxis);
@@ -1032,15 +1032,10 @@ public final class AnvilConverter {
 			case 68: // minecraft:wall_sign
 			case 130: // minecraft:ender_chest
 			case 146: // minecraft:trapped_chest
+			case 177: // minecraft:wall_banner
 				
 				face = toValue(facing, null, null, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.WEST,
 						BlockFace.EAST);
-				
-				break;
-			case 177: // minecraft:wall_banner
-				
-				// TODO
-				face = toValue(facing, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.WEST, BlockFace.EAST);
 				
 				break;
 			case 64: // minecraft:wooden_door
