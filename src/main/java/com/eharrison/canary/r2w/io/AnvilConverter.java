@@ -320,7 +320,6 @@ public final class AnvilConverter {
 				
 				break;
 			case 44: // minecraft:stone_slab
-			case 182: // minecraft:stone_slab2
 			case 126: // minecraft:wood_slab
 				
 				data = getBitFlag(newData, 0, 3);
@@ -328,6 +327,16 @@ public final class AnvilConverter {
 						SlabProperties.Half.UPPER);
 				
 				block.setType(BlockType.fromIdAndData(id, data));
+				SlabProperties.applyHalf(block, half);
+				block.update();
+				
+				break;
+			case 182: // minecraft:stone_slab2
+				
+				half = toValue(getBitFlag(newData, 3, 1), SlabProperties.Half.LOWER,
+						SlabProperties.Half.UPPER);
+				
+				block.setTypeId(id);
 				SlabProperties.applyHalf(block, half);
 				block.update();
 				
@@ -451,7 +460,7 @@ public final class AnvilConverter {
 			case 196: // minecraft:acacia_door
 			case 197: // minecraft:dark_oak_door
 				
-				doorHalf = toValue(getBitFlag(newData, 0, 1), DoorProperties.Half.LOWER,
+				doorHalf = toValue(getBitFlag(newData, 3, 1), DoorProperties.Half.LOWER,
 						DoorProperties.Half.UPPER);
 				
 				block.setTypeId(id);
@@ -460,8 +469,8 @@ public final class AnvilConverter {
 				switch (doorHalf) {
 					case LOWER:
 						
-						open = toBoolean(getBitFlag(newData, 1, 1));
-						facing = convertFacing(id, getBitFlag(newData, 2, 2));
+						open = toBoolean(getBitFlag(newData, 2, 1));
+						facing = convertFacing(id, getBitFlag(newData, 0, 2));
 						
 						DoorProperties.applyOpen(block, open);
 						DoorProperties.applyFacing(block, facing);
@@ -469,9 +478,9 @@ public final class AnvilConverter {
 						break;
 					case UPPER:
 						
-						hinge = toValue(getBitFlag(newData, 1, 1), DoorProperties.HingePosition.LEFT,
+						hinge = toValue(getBitFlag(newData, 0, 1), DoorProperties.HingePosition.LEFT,
 								DoorProperties.HingePosition.RIGHT);
-						powered = toBoolean(getBitFlag(newData, 2, 1));
+						powered = toBoolean(getBitFlag(newData, 1, 1));
 						
 						DoorProperties.applyHinge(block, hinge);
 						DoorProperties.applyPowered(block, powered);
