@@ -7,12 +7,15 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.concurrent.Future;
 
+import net.canarymod.api.factory.CanaryNBTFactory;
+import net.canarymod.api.factory.NBTFactory;
 import net.canarymod.api.world.DimensionType;
 import net.canarymod.api.world.blocks.BlockType;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -29,7 +32,9 @@ public class TemplateManagerTest {
 		final File worldsDir = new File(worldsUrl.toURI());
 		final File templatesDir = templateTempDir.getRoot();
 		final Logger logger = LogManager.getLogger();
-		templateManager = new TemplateManager(logger, new MockWorldManager(), worldsDir, templatesDir);
+		final NBTFactory nbtFactory = new CanaryNBTFactory();
+		templateManager = new TemplateManager(logger, new MockWorldManager(), nbtFactory, worldsDir,
+				templatesDir);
 	}
 	
 	@Test
@@ -105,6 +110,7 @@ public class TemplateManagerTest {
 		}
 	}
 	
+	@Ignore
 	@Test
 	public void updateOutsideOfTemplate() throws Exception {
 		final Future<Boolean> futureCreate = templateManager.createTemplate("default",

@@ -11,6 +11,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 import net.canarymod.Canary;
+import net.canarymod.api.factory.NBTFactory;
+import net.canarymod.api.nbt.CompoundTag;
+import net.canarymod.api.nbt.ListTag;
 import net.canarymod.api.world.DimensionType;
 import net.canarymod.api.world.World;
 import net.canarymod.api.world.WorldManager;
@@ -23,10 +26,12 @@ import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.Logger;
 
 import com.eharrison.canary.r2w.io.AnvilConverter;
+import com.eharrison.canary.r2w.io.NbtIo;
 import com.eharrison.canary.r2w.io.RegionFile;
-import com.mojang.nbt.CompoundTag;
-import com.mojang.nbt.ListTag;
-import com.mojang.nbt.NbtIo;
+// import com.mojang.nbt.CompoundTag;
+// import com.mojang.nbt.ListTag;
+// import com.mojang.nbt.NbtIo;
+// import com.mojang.nbt.Tag;
 
 // /rtw restore default normal -10 67 25 -12 67 27
 // /rtw restore default normal -10 50 -10 10 80 10
@@ -35,20 +40,24 @@ import com.mojang.nbt.NbtIo;
 public class TemplateManager {
 	private final Logger log;
 	private final WorldManager worldManager;
+	private final NBTFactory nbtFactory;
 	private final File worldsDir;
 	private final File templatesDir;
+	private final NbtIo nbtIo;
 	
 	public TemplateManager() {
-		this(ReturnPlugin.LOG, Canary.getServer().getWorldManager(), new File("worlds"), new File(
-				"templates"));
+		this(ReturnPlugin.LOG, Canary.getServer().getWorldManager(), Canary.factory().getNBTFactory(),
+				new File("worlds"), new File("templates"));
 	}
 	
-	public TemplateManager(final Logger log, final WorldManager worldManager, final File worldsDir,
-			final File templatesDir) {
+	public TemplateManager(final Logger log, final WorldManager worldManager,
+			final NBTFactory nbtFactory, final File worldsDir, final File templatesDir) {
 		this.log = log;
 		this.worldManager = worldManager;
+		this.nbtFactory = nbtFactory;
 		this.worldsDir = worldsDir;
 		this.templatesDir = templatesDir;
+		nbtIo = new NbtIo(nbtFactory);
 	}
 	
 	public Future<Boolean> createTemplate(final String name, final DimensionType type) {
@@ -92,7 +101,7 @@ public class TemplateManager {
 					worldManager.loadWorld(name, type);
 				}
 				
-				log.debug("Created template " + name + "_" + type.getName() + ": " + success);
+				log.info("Created template " + name + "_" + type.getName() + ": " + success);
 				return success;
 			}
 		});
@@ -231,9 +240,9 @@ public class TemplateManager {
 			// Load the chunk
 			final DataInputStream dis = region.getChunkDataInputStream(relChunkX, relChunkZ);
 			if (dis != null) {
-				final CompoundTag level = NbtIo.read(dis);
+				final CompoundTag level = (CompoundTag) nbtIo.read(dis);
 				dis.close();
-				final CompoundTag chunkData = level.getCompound("Level");
+				final CompoundTag chunkData = level.getCompoundTag("Level");
 				
 				// Get the height map
 				// final int[] heightMap = chunkData.getIntArray("HeightMap");
@@ -243,7 +252,7 @@ public class TemplateManager {
 				final int sectionId = getSectionForBlockCoordinate(y);
 				
 				// Find the section
-				final ListTag<?> sections = chunkData.getList("Sections");
+				final ListTag<?> sections = chunkData.getListTag("Sections");
 				if (sections.size() > sectionId) {
 					final CompoundTag section = (CompoundTag) sections.get(sectionId);
 					
@@ -299,7 +308,8 @@ public class TemplateManager {
 					if (region.hasChunk(relChunkX, relChunkZ)) {
 						// Load the chunk
 						final DataInputStream dis = region.getChunkDataInputStream(relChunkX, relChunkZ);
-						final CompoundTag chunk = NbtIo.read(dis);
+						final CompoundTag chunk = (CompoundTag) nbtIo.read(dis);
+						System.out.println(chunk);
 						dis.close();
 						
 						restoreChunk(world, chunk, chunkX, chunkZ, xMin, yMin, zMin, xMax, yMax, zMax);
@@ -313,7 +323,7 @@ public class TemplateManager {
 			final int chunkZ, final int xMin, final int yMin, final int zMin, final int xMax,
 			final int yMax, final int zMax) {
 		if (chunk != null && !chunk.isEmpty()) {
-			final CompoundTag level = chunk.getCompound("Level");
+			final CompoundTag level = chunk.getCompoundTag("Level");
 			log.debug("Processing chunk: " + chunkX + ":" + chunkZ);
 			
 			// Determine the included sections
@@ -321,7 +331,7 @@ public class TemplateManager {
 			final int sectionMax = RegionUtil.getSectionForBlockCoordinate(yMax);
 			
 			// For each section
-			final ListTag<?> sections = level.getList("Sections");
+			final ListTag<?> sections = level.getListTag("Sections");
 			for (int sectionY = sectionMin; sectionY <= sectionMax; sectionY++) {
 				if (sectionY < sections.size()) {
 					// Restore the section
@@ -333,6 +343,33 @@ public class TemplateManager {
 							BlockType.Air);
 				}
 			}
+			
+			// Process BlockEntities
+			final ListTag<?> blockEntities = level.getListTag("TileEntities");
+			for (int i = 0; i < blockEntities.size(); i++) {
+				final CompoundTag blockEntity = (CompoundTag) blockEntities.get(i);
+				final int beX = blockEntity.getInt("x");
+				final int beY = blockEntity.getInt("y");
+				final int beZ = blockEntity.getInt("z");
+				
+				if (xMin <= beX && beX <= xMax && yMin <= beY && beY <= yMax && zMin <= beZ && beZ <= zMax) {
+					log.debug(blockEntity.toString());
+					
+					final Block block = world.getBlockAt(beX, beY, beZ);
+					block.getTileEntity().readFromTag(blockEntity);
+				}
+			}
+			
+			// TODO
+			// // log.info(level.getAllTags());
+			// // for (final Tag tag : level.getAllTags()) {
+			// // log.info("Tag: " + tag.getName());
+			// // }
+			// final ListTag<? extends Tag> blockEntities = level.getList("TileEntities");
+			// // log.info(blockEntities.toString());
+			// log.info("BlockEntiteis: " + blockEntities.size());
+			// final ListTag<? extends Tag> entities = level.getList("Entities");
+			// log.info("Entities:      " + entities.size());
 		}
 	}
 	
@@ -341,7 +378,7 @@ public class TemplateManager {
 			final int yMax, final int zMax) {
 		if (section != null && !section.isEmpty()) {
 			final int sectionY = section.getByte("Y");
-			// log.info("Processing section: " + sectionY);
+			log.debug("Processing section: " + sectionY);
 			
 			// Determine the included blocks
 			final int sectionBlockMin = RegionUtil.getSectionBlockIntersection(sectionY, yMin);
@@ -408,23 +445,12 @@ public class TemplateManager {
 			final int type = blocks[relY << 8 | relZ << 4 | relX] & 0xFF;
 			final int data = dataValues.get(relX, relY, relZ);
 			
-			log.info("Setting block: " + blockX + ":" + blockY + ":" + blockZ + " to " + type + ":"
+			log.debug("Setting block: " + blockX + ":" + blockY + ":" + blockZ + " to " + type + ":"
 					+ data);
 			
 			// Set the block in the target world
 			final Block block = world.getBlockAt(blockX, blockY, blockZ);
 			AnvilConverter.convert(block, (byte) type, data);
-			
-			log.info(block);
-			
-			// final Block block = world.getBlockAt(blockX, blockY, blockZ);
-			// final BlockType newType = BlockType.fromIdAndData(type, data);
-			// if (newType == null) {
-			// log.warn("Failed setting bad block: " + type + ":" + data);
-			// } else {
-			// block.setType(newType);
-			// block.update();
-			// }
 		}
 	}
 	
@@ -455,12 +481,12 @@ public class TemplateManager {
 					final DataInputStream dis = region.getChunkDataInputStream(relChunkX, relChunkZ);
 					final CompoundTag chunk;
 					if (dis == null) {
-						chunk = new CompoundTag();
-						final CompoundTag level = new CompoundTag();
-						level.put("Sections", new ListTag<CompoundTag>());
+						chunk = nbtFactory.newCompoundTag("Chunk");
+						final CompoundTag level = nbtFactory.newCompoundTag("Level");
+						level.put("Sections", nbtFactory.newListTag());
 						chunk.put("Level", level);
 					} else {
-						chunk = NbtIo.read(dis);
+						chunk = (CompoundTag) nbtIo.read(dis);
 						dis.close();
 					}
 					
@@ -469,7 +495,8 @@ public class TemplateManager {
 					
 					// Write the chunk
 					final DataOutputStream dos = region.getChunkDataOutputStream(relChunkX, relChunkZ);
-					NbtIo.write(chunk, dos);
+					// TODO
+					// nbtIo.write(chunk, dos);
 					dos.close();
 				}
 			}
@@ -480,7 +507,7 @@ public class TemplateManager {
 			final int chunkZ, final int xMin, final int yMin, final int zMin, final int xMax,
 			final int yMax, final int zMax) {
 		if (chunk != null && !chunk.isEmpty()) {
-			final CompoundTag level = chunk.getCompound("Level");
+			final CompoundTag level = chunk.getCompoundTag("Level");
 			log.debug("Processing chunk: " + chunkX + ":" + chunkZ);
 			
 			// Determine the included sections
@@ -488,8 +515,7 @@ public class TemplateManager {
 			final int sectionMax = RegionUtil.getSectionForBlockCoordinate(yMax);
 			
 			// For each section
-			@SuppressWarnings("unchecked")
-			final ListTag<CompoundTag> sections = (ListTag<CompoundTag>) level.getList("Sections");
+			final ListTag<CompoundTag> sections = level.getListTag("Sections");
 			for (int sectionY = sectionMin; sectionY <= sectionMax; sectionY++) {
 				if (sectionY < sections.size()) {
 					// Restore the section
@@ -499,14 +525,14 @@ public class TemplateManager {
 					// Create the new sections, then update the correct one
 					CompoundTag section = null;
 					while (sectionY >= sections.size()) {
-						section = new CompoundTag();
-						section.putByte("Y", (byte) sectionY);
+						section = nbtFactory.newCompoundTag("Section");
+						section.put("Y", (byte) sectionY);
 						final byte[] blocks = new byte[4096];
 						Arrays.fill(blocks, (byte) -1);
-						section.putByteArray("Blocks", blocks);
+						section.put("Blocks", blocks);
 						final byte[] data = new byte[2048];
 						Arrays.fill(data, (byte) -1);
-						section.putByteArray("Data", data);
+						section.put("Data", data);
 						sections.add(section);
 					}
 					updateSection(world, chunkX, chunkZ, section, xMin, yMin, zMin, xMax, yMax, zMax);
@@ -568,6 +594,8 @@ public class TemplateManager {
 			}
 			final DataLayer dataValues = new DataLayer(data, 4);
 			blocks[relY << 8 | relZ << 4 | relX] = (byte) block.getId();
+			// TODO restore properties into anvil data value
+			System.out.println("Setting block " + block + " to " + block.getData());
 			dataValues.set(relX, relY, relZ, block.getData());
 		}
 	}
