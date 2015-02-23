@@ -1,6 +1,7 @@
 package com.eharrison.canary.r2w.io;
 
 import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 
 import net.canarymod.api.factory.NBTFactory;
@@ -24,6 +25,10 @@ public class NbtIo {
 		final BaseTag<?> tag = readTag(name, type, dis);
 		// System.out.println(tag);
 		return tag;
+	}
+	
+	public void write(final BaseTag<?> tag, final DataOutput dos) throws IOException {
+		// TODO
 	}
 	
 	private BaseTag<?> readTag(final NBTTagType type, final DataInput dis) throws IOException {

@@ -28,14 +28,6 @@ import org.apache.logging.log4j.Logger;
 import com.eharrison.canary.r2w.io.AnvilConverter;
 import com.eharrison.canary.r2w.io.NbtIo;
 import com.eharrison.canary.r2w.io.RegionFile;
-// import com.mojang.nbt.CompoundTag;
-// import com.mojang.nbt.ListTag;
-// import com.mojang.nbt.NbtIo;
-// import com.mojang.nbt.Tag;
-
-// /rtw restore default normal -10 67 25 -12 67 27
-// /rtw restore default normal -10 50 -10 10 80 10
-// /rtw restore default normal -8 54 9 -13 51 14
 
 public class TemplateManager {
 	private final Logger log;
@@ -101,7 +93,11 @@ public class TemplateManager {
 					worldManager.loadWorld(name, type);
 				}
 				
-				log.info("Created template " + name + "_" + type.getName() + ": " + success);
+				if (success) {
+					log.info("Created template " + name + "_" + type.getName());
+				} else {
+					log.info("Error creating template " + name + "_" + type.getName());
+				}
 				return success;
 			}
 		});
@@ -157,7 +153,7 @@ public class TemplateManager {
 								region = newRegionFile(name, type, regionX, regionZ);
 							}
 							
-							log.debug("Processing region: " + regionX + ":" + regionZ);
+							log.info("Processing region: " + regionX + ":" + regionZ);
 							updateRegion(world, region, regionX, regionZ, xMin, yMin, zMin, xMax, yMax, zMax);
 							
 							// Close the region File
@@ -309,7 +305,7 @@ public class TemplateManager {
 						// Load the chunk
 						final DataInputStream dis = region.getChunkDataInputStream(relChunkX, relChunkZ);
 						final CompoundTag chunk = (CompoundTag) nbtIo.read(dis);
-						System.out.println(chunk);
+						// System.out.println(chunk);
 						dis.close();
 						
 						restoreChunk(world, chunk, chunkX, chunkZ, xMin, yMin, zMin, xMax, yMax, zMax);
@@ -359,17 +355,6 @@ public class TemplateManager {
 					block.getTileEntity().readFromTag(blockEntity);
 				}
 			}
-			
-			// TODO
-			// // log.info(level.getAllTags());
-			// // for (final Tag tag : level.getAllTags()) {
-			// // log.info("Tag: " + tag.getName());
-			// // }
-			// final ListTag<? extends Tag> blockEntities = level.getList("TileEntities");
-			// // log.info(blockEntities.toString());
-			// log.info("BlockEntiteis: " + blockEntities.size());
-			// final ListTag<? extends Tag> entities = level.getList("Entities");
-			// log.info("Entities:      " + entities.size());
 		}
 	}
 	
@@ -495,8 +480,7 @@ public class TemplateManager {
 					
 					// Write the chunk
 					final DataOutputStream dos = region.getChunkDataOutputStream(relChunkX, relChunkZ);
-					// TODO
-					// nbtIo.write(chunk, dos);
+					nbtIo.write(chunk, dos);
 					dos.close();
 				}
 			}
@@ -595,7 +579,7 @@ public class TemplateManager {
 			final DataLayer dataValues = new DataLayer(data, 4);
 			blocks[relY << 8 | relZ << 4 | relX] = (byte) block.getId();
 			// TODO restore properties into anvil data value
-			System.out.println("Setting block " + block + " to " + block.getData());
+			// System.out.println("Setting block " + block + " to " + block.getData());
 			dataValues.set(relX, relY, relZ, block.getData());
 		}
 	}

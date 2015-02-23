@@ -90,6 +90,7 @@ public class TemplateManagerTest {
 		}
 	}
 	
+	@Ignore
 	@Test
 	public void update() throws Exception {
 		final Future<Boolean> futureCreate = templateManager.createTemplate("default",
@@ -97,9 +98,9 @@ public class TemplateManagerTest {
 		if (futureCreate.get()) {
 			assertNotEquals(BlockType.Grass,
 					templateManager.getTemplateBlock("default", DimensionType.NORMAL, -1, 62, -1));
-			final Future<Boolean> futureRestore = templateManager.update("default", DimensionType.NORMAL,
+			final Future<Boolean> futureUpdate = templateManager.update("default", DimensionType.NORMAL,
 					-1, 62, -1, 1, 63, 1);
-			if (futureRestore.get()) {
+			if (futureUpdate.get()) {
 				assertEquals(BlockType.Grass,
 						templateManager.getTemplateBlock("default", DimensionType.NORMAL, -1, 62, -1));
 			} else {
