@@ -1,4 +1,4 @@
-package com.eharrison.canary.r2w;
+package com.goodformentertainment.canary.r2w;
 
 import static org.junit.Assert.*;
 
@@ -19,6 +19,8 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import com.goodformentertainment.canary.r2w.TemplateManager;
 
 public class TemplateManagerTest {
 	@Rule

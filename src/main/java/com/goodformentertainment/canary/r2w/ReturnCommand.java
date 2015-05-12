@@ -1,4 +1,4 @@
-package com.eharrison.canary.r2w;
+package com.goodformentertainment.canary.r2w;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;

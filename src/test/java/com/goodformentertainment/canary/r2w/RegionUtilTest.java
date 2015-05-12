@@ -1,8 +1,10 @@
-package com.eharrison.canary.r2w;
+package com.goodformentertainment.canary.r2w;
 
 import static org.junit.Assert.*;
 
 import org.junit.Test;
+
+import com.goodformentertainment.canary.r2w.RegionUtil;
 
 public class RegionUtilTest {
 	@Test

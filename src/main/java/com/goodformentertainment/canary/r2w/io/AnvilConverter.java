@@ -1,4 +1,4 @@
-package com.eharrison.canary.r2w.io;
+package com.goodformentertainment.canary.r2w.io;
 
 import net.canarymod.Canary;
 import net.canarymod.api.world.blocks.Block;

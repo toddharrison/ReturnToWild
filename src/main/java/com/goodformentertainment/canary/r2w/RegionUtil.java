@@ -1,4 +1,4 @@
-package com.eharrison.canary.r2w;
+package com.goodformentertainment.canary.r2w;
 
 public final class RegionUtil {
 	public static final int BLOCKS_IN_CHUNK = 16;

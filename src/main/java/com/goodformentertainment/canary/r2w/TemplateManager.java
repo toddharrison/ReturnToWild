@@ -1,6 +1,6 @@
-package com.eharrison.canary.r2w;
+package com.goodformentertainment.canary.r2w;
 
-import static com.eharrison.canary.r2w.RegionUtil.*;
+import static com.goodformentertainment.canary.r2w.RegionUtil.*;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -25,9 +25,9 @@ import net.visualillusionsent.utils.TaskManager;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.Logger;
 
-import com.eharrison.canary.r2w.io.AnvilConverter;
-import com.eharrison.canary.r2w.io.NbtIo;
-import com.eharrison.canary.r2w.io.RegionFile;
+import com.goodformentertainment.canary.r2w.io.AnvilConverter;
+import com.goodformentertainment.canary.r2w.io.NbtIo;
+import com.goodformentertainment.canary.r2w.io.RegionFile;
 
 public class TemplateManager {
 	private final Logger log;

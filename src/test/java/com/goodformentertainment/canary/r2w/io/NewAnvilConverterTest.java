@@ -1,4 +1,4 @@
-package com.eharrison.canary.r2w.io;
+package com.goodformentertainment.canary.r2w.io;
 
 import static org.easymock.EasyMock.*;
 import net.canarymod.api.world.blocks.Block;
@@ -9,6 +9,8 @@ import org.easymock.TestSubject;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import com.goodformentertainment.canary.r2w.io.AnvilConverter;
 
 public class NewAnvilConverterTest {
 	@TestSubject

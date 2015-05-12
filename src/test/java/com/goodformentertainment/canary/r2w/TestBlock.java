@@ -1,6 +1,8 @@
-package com.eharrison.canary.r2w;
+package com.goodformentertainment.canary.r2w;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import net.canarymod.api.entity.living.humanoid.Player;
 import net.canarymod.api.packet.BlockChangePacket;
@@ -19,7 +21,13 @@ import net.canarymod.api.world.position.Position;
 
 import com.google.common.collect.ImmutableMap;
 
-public class MockBlock implements Block {
+public class TestBlock implements Block {
+	private BlockType type;
+	private final Map<BlockProperty, Comparable> properties;
+	
+	public TestBlock() {
+		properties = new HashMap<BlockProperty, Comparable>();
+	}
 	
 	@Override
 	public short getTypeId() {
@@ -47,13 +55,12 @@ public class MockBlock implements Block {
 	
 	@Override
 	public BlockType getType() {
-		return BlockType.Grass;
+		return type;
 	}
 	
 	@Override
 	public void setType(final BlockType type) {
-		// TODO Auto-generated method stub
-		
+		this.type = type;
 	}
 	
 	@Override
@@ -226,26 +233,23 @@ public class MockBlock implements Block {
 	
 	@Override
 	public ImmutableMap<BlockProperty, Comparable> getProperties() {
-		// TODO Auto-generated method stub
-		return null;
+		return ImmutableMap.copyOf(properties);
 	}
 	
 	@Override
 	public BlockProperty getPropertyForName(final String name) {
-		// TODO Auto-generated method stub
-		return null;
+		return (BlockProperty) properties.get(name);
 	}
 	
 	@Override
-	public Comparable getValue(final BlockProperty property) {
+	public Comparable<?> getValue(final BlockProperty property) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	@Override
 	public void setPropertyValue(final BlockProperty property, final Comparable value) {
-		// TODO Auto-generated method stub
-		
+		properties.put(property, value);
 	}
 	
 	@Override
@@ -271,5 +275,4 @@ public class MockBlock implements Block {
 		// TODO Auto-generated method stub
 		return null;
 	}
-	
 }
