@@ -1,0 +1,45 @@
+// Set a property canaryHome pointing to the root of the canary test server
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'maven'
+
+group = 'com.goodformentertainment.canary'
+version = '1.0.0'
+
+archivesBaseName = 'return-to-wild'
+compileJava.options.encoding = 'UTF-8'
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
+
+jar {
+    manifest {
+        attributes 'Created-By': 'Gradle',
+                   'Implementation-Title': project.name,
+                   'Implementation-Version': version
+    }
+}
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+
+    maven {
+        url 'http://repo.visualillusionsent.net/repository/public/'
+    }
+}
+
+dependencies {
+    compile group: 'net.canarymod', name: 'CanaryLib', version: '1.2.1-SNAPSHOT', changing: true
+    compile group: 'net.canarymod', name: 'CanaryMod', version: '1.8.0-1.2.0-SNAPSHOT'
+    testCompile group: 'junit', name: 'junit', version: '4.+'
+    testCompile group: 'org.easymock', name: 'easymock', version: '3+'
+}
+
+task canary(dependsOn: 'build') << {
+    copy {
+        from jar.archivePath
+        into "$canaryHome/plugins"
+    }
+    println "Copied $project.name into $canaryHome"
+}
